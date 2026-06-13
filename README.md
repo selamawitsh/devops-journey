@@ -16,9 +16,9 @@ Core Linux skills every DevOps engineer uses daily.
 | Topic | Folder | Status |
 |-------|--------|--------|
 | Shell basics | linux-fundamentals/01-shell-basics | done |
-| Command options and arguments | linux-fundamentals/02-command-options | pending |
-| Command history | linux-fundamentals/03-command-history | pending |
-| Pathnames and navigation | linux-fundamentals/04-pathnames | pending |
+| Command options and arguments | linux-fundamentals/02-command-options | done |
+| Command history | linux-fundamentals/03-command-history | done |
+| Pathnames and navigation | linux-fundamentals/04-pathnames | done |
 | Filter commands | linux-fundamentals/05-filter-commands | pending |
 | I/O redirection and pipes | linux-fundamentals/06-io-redirection | pending |
 | Managing files | linux-fundamentals/07-managing-files | pending |
