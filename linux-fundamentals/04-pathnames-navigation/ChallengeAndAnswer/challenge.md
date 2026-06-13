@@ -12,10 +12,10 @@ Navigate to the directory that contains system log files.
 What is the absolute path? List its contents.
 
 **Commands I used:**
-See screenshot: `answers/ans1.png`
+[Click to view answer](answers/ans1.png)
 
 **Path:**
-See screenshot: `answers/ans1.png`
+[Click to view answer](answers/ans1.png)
 
 ---
 
@@ -25,10 +25,10 @@ a) An absolute path
 b) A relative path (hint: use `..`)
 
 **Absolute:**
-See screenshot: `answers/ans2.png`
+[Click to view answer](answers/ans2.png)
 
 **Relative:**
-See screenshot: `answers/ans2.png`
+[Click to view answer](answers/ans2.png)
 
 ---
 
@@ -37,13 +37,13 @@ You are in `/etc/nginx` (or any deep directory). Get back to your
 home directory using three different methods.
 
 **Method 1:**
-See screenshot: `answers/ans3.png`
+[Click to view answer](answers/ans3.png)
 
 **Method 2:**
-See screenshot: `answers/ans3.png`
+[Click to view answer](answers/ans3.png)
 
 **Method 3:**
-See screenshot: `answers/ans3.png`
+[Click to view answer](answers/ans3.png)
 
 ---
 
@@ -53,7 +53,7 @@ Without moving from your current directory, list the contents of
 directory one level above you using a relative path.
 
 **Commands:**
-See screenshot: `answers/ans4.png`
+[Click to view answer](answers/ans4.png)
 
 ---
 
@@ -62,7 +62,7 @@ A log file is at `/var/log/syslog`. You are in `/var/log/apt`.
 Write the relative path to get to `syslog` from there.
 
 **My answer:**
-See screenshot: `answers/ans5.png`
+[Click to view answer](answers/ans5.png)
 
 **Verify by running:**
-See screenshot: `answers/ans5.png`
+[Click to view answer](answers/ans5.png)
