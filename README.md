@@ -24,7 +24,7 @@ Core Linux skills every DevOps engineer uses daily.
 | Managing files | linux-fundamentals/07-managing-files | done |
 | Links and inodes | linux-fundamentals/08-links | done |
 | Wildcards | linux-fundamentals/09-wildcards | done |
-| vi editor | linux-fundamentals/10-vi-editor | done |
+| vi editor | linux-fundamentals/10-vi-editor | pending |
 | find command | linux-fundamentals/11-find | done |
 | man pages | linux-fundamentals/12-man-pages | done |
 | File permissions | linux-fundamentals/13-permissions | done |

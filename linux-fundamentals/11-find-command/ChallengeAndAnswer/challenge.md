@@ -12,6 +12,8 @@ List them with their sizes.
 
 **Command:**
 ```
+find /var -type f -size +50M -ls
+
 ```
 **Output:**
 ```
@@ -25,6 +27,7 @@ in more than 30 days. These are candidates for archiving.
 
 **Command:**
 ```
+find /var/log -type f -name "*.log" -mtime +30
 ```
 
 ---
@@ -35,6 +38,8 @@ world-writable permissions (this would be a security problem).
 
 **Command:**
 ```
+find /etc -type f -user root -perm - 002
+
 ```
 **Output (should hopefully be empty):**
 ```
@@ -48,12 +53,17 @@ How many are there?
 
 **Command to find them:**
 ```
+find /usr/bin -type l
+
 ```
 **Command to count them:**
 ```
+find /usr/bin -type l | wc -l
+
 ```
 **Count:**
 ```
+wc -l
 ```
 
 ---
@@ -64,13 +74,20 @@ Write the command that would delete them (don't run it yet — just write it).
 
 **Find command:**
 ```
+find /tmp -type f -mtime +7 
+
+
 ```
 **Delete command:**
 ```
+find /tmp -type -f -mtime +7 -exec -rm {} \
+
+or
+
+find /tmp -type -f -mtime +7 -delete
+
 ```
-**Why you should be careful before running the delete:**
-```
-```
+
 
 ---
 
@@ -80,7 +97,6 @@ Why is this important from a security perspective?
 
 **Command:**
 ```
-```
-**Why setuid files matter for security:**
-```
+find / -type f -perm -4000 2>/dev/null
+
 ```
