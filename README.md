@@ -19,15 +19,15 @@ Core Linux skills every DevOps engineer uses daily.
 | Command options and arguments | linux-fundamentals/02-command-options | done |
 | Command history | linux-fundamentals/03-command-history | done |
 | Pathnames and navigation | linux-fundamentals/04-pathnames | done |
-| Filter commands | linux-fundamentals/05-filter-commands | pending |
-| I/O redirection and pipes | linux-fundamentals/06-io-redirection | pending |
-| Managing files | linux-fundamentals/07-managing-files | pending |
-| Links and inodes | linux-fundamentals/08-links | pending |
-| Wildcards | linux-fundamentals/09-wildcards | pending |
-| vi editor | linux-fundamentals/10-vi-editor | pending |
-| find command | linux-fundamentals/11-find | pending |
-| man pages | linux-fundamentals/12-man-pages | pending |
-| File permissions | linux-fundamentals/13-permissions | pending |
+| Filter commands | linux-fundamentals/05-filter-commands | done |
+| I/O redirection and pipes | linux-fundamentals/06-io-redirection | done |
+| Managing files | linux-fundamentals/07-managing-files | done |
+| Links and inodes | linux-fundamentals/08-links | done |
+| Wildcards | linux-fundamentals/09-wildcards | done |
+| vi editor | linux-fundamentals/10-vi-editor | done |
+| find command | linux-fundamentals/11-find | done |
+| man pages | linux-fundamentals/12-man-pages | done |
+| File permissions | linux-fundamentals/13-permissions | done |
 | chmod | linux-fundamentals/14-chmod | pending |
 | chown and chgrp | linux-fundamentals/15-chown | pending |
 | umask | linux-fundamentals/16-umask | pending |
