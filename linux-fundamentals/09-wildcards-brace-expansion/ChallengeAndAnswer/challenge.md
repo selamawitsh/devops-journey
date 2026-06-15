@@ -12,6 +12,7 @@ Create a directory structure for three environments using a single command:
 
 **Command:**
 ```
+mkdir /tmp/practice/{development,staging,production}
 ```
 
 ---
@@ -22,6 +23,7 @@ using brace expansion. Do it in one command.
 
 **Command:**
 ```
+touch service{1-10}.log
 ```
 
 ---
@@ -32,9 +34,11 @@ through service9.log, NOT service10.log). What wildcard achieves this?
 
 **Command:**
 ```
+ls service?.log
 ```
 **Explanation of the pattern:**
 ```
+the question mark(?) tells that to only expect one character after 'e'
 ```
 
 ---
@@ -45,6 +49,8 @@ files from the current directory.
 
 **Commands:**
 ```
+cp *.log /tmp/practice/production/
+rm *.log
 ```
 
 ---
@@ -56,6 +62,7 @@ Write a pattern to match ONLY `deploy_v1.sh` and `deploy_v2.sh`
 
 **Pattern:**
 ```
+deploy_v?.sh
 ```
 
 ---
