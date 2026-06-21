@@ -268,3 +268,7 @@ with chage.
 - Using awk to match an exact field value in passwd
 - Locked account detection via the shadow password field
 ```
+
+
+
+
