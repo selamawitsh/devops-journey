@@ -23,8 +23,8 @@ mine. This is how secure communication happens without ever
 transmitting a shared secret over the network.
 
 ## Installing SSH
-  yum install openssh-server    # to host/accept connections
-  yum install openssh-client    # to connect out to other machines
+  sudo apt install openssh-server    # to host/accept connections
+  sudo apt install openssh-client    # to connect out to other machines
 
 ## Basic connection
   ssh username@hostname
