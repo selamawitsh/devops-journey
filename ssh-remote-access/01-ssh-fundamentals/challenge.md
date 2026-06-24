@@ -77,8 +77,7 @@ ssh devops@192.168.1.100
 # The authenticity of host '192.168.1.100 (192.168.1.100)' can't be established.
 # ED25519 key fingerprint is SHA256:8R7pM3qK2xL9vF4wN6hY1dJ5sA0cB8tE3rG7iU.
 # This key is not known by any other names.
-# Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
-# Warning: Permanently added '192.168.1.100' (ED25519) to the list of known hosts.
+
 
 # --- Answers ---
 # Q: Why does SSH show this warning on the first connection?
@@ -122,9 +121,9 @@ cat ~/.ssh/known_hosts
 #    rebuild) and you try to SSH in again?
 # SSH will display a stern warning that the host key has changed and refuse to
 # connect:
-# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-# @    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
-# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+# WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     
+
 # IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
 # This is a security feature. You must manually remove the old key from
 # known_hosts (using ssh-keygen -R) before reconnecting.
@@ -544,25 +543,6 @@ ssh root@192.168.1.100
 # Self-Assessment
 # ===================================================================
 
-# Tasks I completed fully in the terminal:
-# All 14 tasks completed: verifying SSH service status, discovering server
-# identity, first SSH login with host key verification, investigating
-# known_hosts, generating ed25519 key pair, installing public key via
-# ssh-copy-id, disabling password authentication, fixing file permissions,
-# remote command execution, secure file transfer with SCP, simulating host
-# key change with ssh-keygen -R, creating SSH config file with aliases,
-# investigating active users with w/who, and disabling root login.
-
-# Questions I answered confidently from memory:
-# All 8 final assessment questions answered. Key concepts solidified:
-# known_hosts vs authorized_keys, host keys vs user keys, public/private key
-# cryptography rationale, permission requirements, and security best practices.
-
-# Things that still confused me:
-# - The exact format of different key types in known_hosts (ECDSA vs ED25519 vs RSA)
-# - How SSH agent forwarding works and its security implications
-# - The differences between ssh-keygen -R and manually editing known_hosts
-# - How host key certificates work in large-scale deployments
 
 # Date completed:
 # 2026-06-23
