@@ -1,35 +1,48 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Topic: SSH Fundamentals
-# Some of these require a second machine or VM to actually connect to.
-# If you only have one machine, you can SSH to yourself: ssh localhost
+# Safe, read-only checks and examples for learning. Many commands are
+# commented out because they require another host or root privileges.
 
-# Check if SSH server is installed and running
-systemctl status sshd
+set -euo pipefail
 
-# Connect to yourself as a quick test (uses current username)
-# ssh localhost
+# Helper: detect whether we can use systemctl name for sshd
+check_sshd() {
+	if systemctl status sshd >/dev/null 2>&1; then
+		systemctl status sshd --no-pager
+	elif systemctl status ssh >/dev/null 2>&1; then
+		systemctl status ssh --no-pager
+	else
+		echo "systemd service 'sshd' or 'ssh' not found or requires sudo." >&2
+	fi
+}
 
-# Connect specifying a different user
-# ssh someuser@localhost
+# Basic information checks (safe to run)
+echo "== SSH server status (may require sudo) =="
+check_sshd || true
 
-# Run a single remote command without an interactive shell
-# ssh localhost hostname
+echo "\n== Who is logged in (local checks) =="
+w || true
+w --from || true
 
-# See who is currently logged in (works locally too)
-w
-w --from
-
-# Look at your known_hosts file (may not exist yet if you've never SSH'd out)
+echo "\n== known_hosts and host key fingerprints =="
 cat ~/.ssh/known_hosts 2>/dev/null || echo "no known_hosts yet"
+ls /etc/ssh/*key.pub 2>/dev/null || true
+ssh-keygen -l -f /etc/ssh/ssh_host_ecdsa_key.pub 2>/dev/null || true
+ssh-keygen -l -f /etc/ssh/ssh_host_rsa_key.pub 2>/dev/null || true
 
-# Look at the server's own host key fingerprints
-ls /etc/ssh/*key.pub
-ssh-keygen -l -f /etc/ssh/ssh_host_ecdsa_key.pub 2>/dev/null
-ssh-keygen -l -f /etc/ssh/ssh_host_rsa_key.pub 2>/dev/null
+# Example: install your public key onto a server (uncomment to use)
+# ssh-copy-id user@host
 
-# If you ever need to remove a single host's old key (safer than editing manually)
-# ssh-keygen -R hostname
+# Example: run a single command on a remote host (uncomment to use)
+# ssh user@host uptime
 
-# Practice scp — copy a file to a remote machine (adjust target)
-# echo "test file" > /tmp/testfile.txt
-# scp /tmp/testfile.txt user@remotehost:/tmp/
+# Check ssh directory permissions (common troubleshooting)
+if [ -d "$HOME/.ssh" ]; then
+	echo "~/.ssh permissions:" && ls -ld "$HOME/.ssh"
+	echo "authorized_keys permissions:" && ls -l "$HOME/.ssh/authorized_keys" 2>/dev/null || true
+else
+	echo "No ~/.ssh directory yet. Generate keys with: ssh-keygen -t ed25519" 
+fi
+
+echo "\nDone. Review the file and run only the lines you understand."
+
