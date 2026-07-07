@@ -35,6 +35,9 @@ This is how every new user gets `.bashrc`, `.profile`, etc. by default.
 You can customize `/etc/skel` to include your own files (like a `finance/`
 folder with an `accounting` file) so every new user gets them too.
 
+**Note:** most commands that change system accounts require root. Prefix
+with `sudo` (or run as root) when following the examples on a real host.
+
 ## Setting a password
   passwd username
 
@@ -51,6 +54,11 @@ user's password this way.
   grep username /etc/passwd
   grep groupname /etc/group
   grep username /etc/shadow
+
+For systems using LDAP or NSS, `getent` is a more portable way to query:
+
+  getent passwd username
+  getent group groupname
 
 ## /etc/passwd field order
   username:x:UID:GID:comment:home_dir:shell
@@ -84,6 +92,12 @@ The `x` means the real password is stored in /etc/shadow, not here.
 ## Secondary groups and usermod
   usermod -aG groupname username
 
+**Warning:** `-G` without `-a` will replace a user's secondary groups and can
+accidentally remove important memberships — prefer `-aG` when adding groups.
+
+To test a new secondary group without logging out, use `newgrp groupname` or
+`sg groupname -c "command"`.
+
 `-aG` APPENDS to secondary groups. Without `-a`, `-G` REPLACES all
 secondary groups — a very common and dangerous mistake.
 
@@ -105,3 +119,9 @@ accounts (for engineers), and proper group-based access control.
 Getting UID/GID conflicts wrong, or secondary groups wrong, breaks
 permissions across the whole system. Password aging and sudoers are
 core to security compliance on any production server.
+
+## Notes on UID/GID ranges
+- Many distributions reserve low UIDs/GIDs (<1000) for system accounts. Use
+  UIDs >= 1000 for human users unless you have a specific reason otherwise.
+- When choosing explicit UIDs/GIDs, check `/etc/login.defs` and the local
+  distribution policy to avoid collisions.
