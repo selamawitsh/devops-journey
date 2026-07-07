@@ -22,6 +22,11 @@ using YOUR public key, only YOUR private key can open it — not even
 mine. This is how secure communication happens without ever
 transmitting a shared secret over the network.
 
+Note (how SSH uses the pair): when using key-based SSH login, the *client*
+keeps the private key and the *server* stores the public key in
+`~/.ssh/authorized_keys`. During authentication the client proves it
+holds the private key; the server only needs the public key to verify.
+
 ## Installing SSH
   sudo apt install openssh-server    # to host/accept connections
   sudo apt install openssh-client    # to connect out to other machines
@@ -77,3 +82,34 @@ log checking, emergency fixes. Understanding host key verification
 means you won't blindly accept a connection that could be compromised,
 and you'll know exactly what to do when a server is legitimately
 rebuilt and its key changes.
+
+## Prerequisites
+- A recent `openssh-client` (usually present on developer machines).
+- `openssh-server` on machines you expect to accept incoming SSH.
+- `ssh-keygen`, `ssh-copy-id`, and a basic shell (bash/zsh).
+
+## Quick ~/.ssh/config example
+Use this to simplify common hosts and to control options per-host:
+
+  Host prod-web
+    HostName prod.example.com
+    User deploy
+    IdentityFile ~/.ssh/id_rsa_deploy
+    StrictHostKeyChecking ask
+
+## Handy commands
+- Install your public key to a server (safe, automated):
+  `ssh-copy-id user@host`
+- Show public key fingerprints on the server:
+  `ssh-keygen -l -f /etc/ssh/ssh_host_ecdsa_key.pub`
+
+## Troubleshooting
+- Permissions: `~/.ssh` must be 700 and `~/.ssh/authorized_keys` usually 600.
+- Firewall: ensure port 22 (or configured SSH port) is open on the server.
+- Service: `systemctl status sshd` (or `ssh`) and check `/var/log/auth.log`.
+- If a host key changed unexpectedly, don't accept it until you verify out-of-band.
+
+## See also
+- `man ssh`
+- `man sshd_config`
+- `man ssh-keygen`
