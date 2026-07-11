@@ -1,7 +1,7 @@
 # SSH Tunneling — Local, Remote, and X11 Forwarding
 
 ## The core idea
-SSH can do more than give you a shell — it can also forward NETWORK
+SSH can do more than give you a shell it can also forward NETWORK
 TRAFFIC through the encrypted connection. This means you can reach a
 service that isn't normally exposed to you, by routing the traffic
 through a machine that CAN reach it.
