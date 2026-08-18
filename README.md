@@ -41,7 +41,7 @@ This isn't a collection of tutorial notes. Every phase follows the same rule: **
 ## Progress tracker
 
 | # | Phase | Topic folder | Status |
-|---|---|---|---|---|
+|---|---|---|---|
 | 01a | Linux — Fundamentals | `linux_adminstration/linux-fundamentals` | Not started |
 | 01b | Linux — User & Group Management | `linux_adminstration/user-group-management` | Not started |
 | 01c | Linux — Package Management | `linux_adminstration/package-management` | In progress |
@@ -65,8 +65,6 @@ This isn't a collection of tutorial notes. Every phase follows the same rule: **
 | 16 | Logging | `prometheus-grafana` | Not started |
 | 17 | Security | `production-projects` | Not started |
 | 18 | Production DevOps (Capstone) | `production-projects` | Not started |
-
-*Update the Status column as you go — this table is the first thing anyone browsing the repo actually reads, including a hiring manager.*
 
 ---
 
