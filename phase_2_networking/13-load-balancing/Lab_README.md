@@ -10,7 +10,7 @@ By the end of this module you should be able to:
 ## Why This Matters
 This module is the payoff for everything before it. An AWS ALB, an NLB, an nginx `upstream` block, a Kubernetes `Service` — they're all load balancers, differing mainly in *layer* (L4 vs L7) and *where they run*.
 
-## ⚠️ A Straight Answer on Packet Tracer's Limits Here
+## A Straight Answer on Packet Tracer's Limits Here
 Before the lab: **Packet Tracer has no dedicated load-balancer device, and its DNS server does not perform real round-robin rotation, least-connections balancing, or automated health-check-driven failover.** This is a genuine gap in the tool, not something to work around by pretending otherwise. What you *can* do in PT is configure multiple backend servers behind one hostname and manually observe what "directing traffic to a pool" and "removing a failed server" look like at a config level — useful for the concepts, but it will not show you real balancing *behavior*. If you want to actually see round-robin rotation and automatic health checks working live, that requires real tooling (nginx/HAProxy) — the previous version of this module's lab used exactly that, with Docker Compose, and is worth doing separately if you have Docker available.
 
 ## Core Concepts
