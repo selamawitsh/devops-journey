@@ -44,16 +44,4 @@ the most control and leaves the least on you — control and responsibility move
 - **Availability Zone (AZ)** — one or more datacenters within a region
 - **Edge location** — a smaller site used for content delivery (CDN), closer to end users
 
-## Reflection
 
-1. If you leave an S3 bucket public by mistake, whose responsibility is that — AWS's or
-   yours? Why?
-2. Why does IAM misconfiguration cause more real-world breaches than AWS's own
-   infrastructure failing?
-
-## Suggested Commit
-
-```bash
-git add 04-aws-overview-shared-responsibility/
-git commit -m "docs(cloud): session 1d - AWS overview and shared responsibility model"
-```
