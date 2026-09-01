@@ -1,62 +1,178 @@
-# Session 07 (3/5): ECS Core Concepts
+# ECS Core Concepts
 
-## Task definition — an immutable, versioned blueprint
+*Session 07 (3/5) — Linux/DevOps Curriculum*
 
-A task definition is JSON describing exactly what should run: which image
-(and which exact tag — this is where commit-SHA tagging from the ECR doc pays
-off), how much CPU/memory, which ports, which env vars, which IAM role the
-container assumes.
+A working reference for how AWS Elastic Container Service (ECS) is structured, from a task definition all the way up to a running container. The five concepts below build on each other in order — each one wraps the one before it.
 
-Task definitions are never edited in place. Every change creates a new
-**revision** — `web-task:1`, `web-task:2`, `web-task:3`. This means at any
-moment you can answer "what's running in prod right now" with an exact chain:
-revision number -> exact image tag -> exact git commit. Rolling back is just
-pointing the service at the previous revision, not reconstructing what changed.
+---
 
-## Task — usually one container, sometimes more
+## Table of Contents
 
-A task is one running instance of a task definition. Most of the time that's a
-single container. But a task definition's `containerDefinitions` field is an
-**array**, not a single object, because a task can bundle multiple containers
-that always deploy, scale, and get placed together as one unit — sharing the
-same network namespace, so they can reach each other over `localhost`.
+1. [Task Definition — the blueprint](#1-task-definition--the-blueprint)
+2. [Task — a running instance](#2-task--a-running-instance)
+3. [Service — self-healing + rolling deploys](#3-service--self-healing--rolling-deploys)
+4. [Cluster — the capacity boundary](#4-cluster--the-capacity-boundary)
+5. [Putting it together: a real multi-service platform](#5-putting-it-together-a-real-multi-service-platform)
+6. [The full pipeline, end to end](#6-the-full-pipeline-end-to-end)
 
-This is the **sidecar pattern**: a main app container plus a small helper
-bolted to it. Common real examples: a log-shipping sidecar (Fluent Bit)
-tailing the app's logs and forwarding them centrally, or a metrics exporter.
+---
 
-## Service — self-healing, plus rolling deployments
+## 1. Task Definition — the blueprint
 
-A service keeps a `desiredCount` of tasks running and replaces any that die.
-The part that matters day to day is how it deploys: pointing a service at a
-new task definition revision doesn't kill everything and restart. It starts
-new tasks from the new revision, waits for them to pass health checks, then
-drains the old ones. Two settings control how aggressive that is:
+A **task definition** is a JSON document describing exactly what should run:
 
-- `minimumHealthyPercent` — how far capacity is allowed to dip mid-deploy
-  (e.g. 50% means half of desired count can be down at once).
-- `maximumPercent` — how far above desired count it can go while spinning up
-  new tasks (e.g. 200% allows briefly running double capacity).
+- Which Docker image, and **which exact tag** (this is where commit-SHA tagging pays off — see the ECR notes)
+- CPU and memory allocation
+- Which ports are exposed
+- Environment variables
+- Which IAM role the container assumes at runtime
 
-**The real-world failure mode:** if the ALB health check path is
-misconfigured, ECS concludes the new (actually fine) tasks are unhealthy,
-refuses to finish the rollout, and keeps cycling. The service looks "stuck
-deploying" — the bug is a wrong `/health` path, not the application code. This
-is one of the most common ECS incidents in practice, not an edge case.
+**The key rule: task definitions are immutable.** You never edit one in place. Every change — a new image tag, a new env var, a memory bump — creates a new **revision**:
 
-## Cluster — just the capacity boundary
+```
+web-task:1
+web-task:2
+web-task:3
+```
 
-A cluster is a logical grouping that tasks and services run inside. Nothing
-more than that. It's backed either by Fargate (AWS-managed capacity) or by EC2
-instances registered as cluster capacity. Companies typically run one cluster
-per environment (`staging`, `prod`) and separate services *within* a cluster
-by name, rather than spinning up a cluster per service.
+### Why immutability matters
 
-## How this maps onto a real multi-service platform
+Because revisions are never overwritten, you always have an exact, auditable chain:
 
-Agri-Yield's 11 services wouldn't need 11 clusters — they'd typically sit
-inside one `agri-yield-prod` cluster as 11 separate services, each with its
-own task definition, its own desired count, its own independent rolling
-deployments. `geospatial-service` redeploying doesn't touch `farm-service`'s
-running tasks at all — they're different services in the same cluster.
+```
+revision number  →  exact image tag  →  exact git commit
+```
 
+At any moment you can answer "what's running in prod right now?" with certainty. And rolling back is trivial — it's not "figure out what changed and reverse it," it's just **pointing the service at the previous revision number**. The old, known-good JSON already exists; nothing needs to be reconstructed.
+
+---
+
+## 2. Task — a running instance
+
+A **task** is one running instance of a task definition. Most of the time, that means one container. But look closer at the task definition's `containerDefinitions` field — it's an **array**, not a single object. That's deliberate: a task can bundle multiple containers that:
+
+- always deploy together
+- always scale together
+- always get placed on the same host together
+- share the same network namespace, so they can talk to each other over `localhost`
+
+### The sidecar pattern
+
+This is what makes the **sidecar pattern** possible: a main application container plus a small helper container bolted onto it, living inside the same task.
+
+Common real-world sidecars:
+
+| Sidecar | Purpose |
+|---|---|
+| **Fluent Bit** | Tails the app container's logs and forwards them to a central log store |
+| **Metrics exporter** | Scrapes app metrics and exposes them for a monitoring system |
+
+The app container doesn't need to know how logging or metrics collection works internally — it just writes to stdout or a local port, and the sidecar handles the rest.
+
+---
+
+## 3. Service — self-healing + rolling deploys
+
+A **service** does two jobs:
+
+1. **Keeps a `desiredCount` of tasks running.** If a task dies (crash, host failure, health check failure), the service starts a replacement automatically. This is the self-healing part.
+2. **Manages deployments when you point it at a new task definition revision.**
+
+### How a deployment actually happens
+
+Pointing a service at a new revision does **not** kill everything and restart from scratch. Instead:
+
+1. New tasks are started from the new revision
+2. ECS waits for them to pass health checks
+3. Only once they're healthy does it drain (stop) the old tasks
+
+Two settings control how aggressive this rollout is:
+
+- **`minimumHealthyPercent`** — how far capacity is allowed to dip mid-deploy. `50%` means half of `desiredCount` can be down at once while the rollout is in progress.
+- **`maximumPercent`** — how far above `desiredCount` the service can go while new tasks are spinning up. `200%` allows briefly running at double capacity before old tasks are drained.
+
+### The real-world failure mode
+
+This is worth internalizing because it's genuinely one of the most common ECS incidents, not an edge case:
+
+> If the ALB (load balancer) health check path is misconfigured, ECS concludes the new tasks — which are actually fine — are unhealthy. It refuses to finish the rollout and keeps cycling new tasks up and down.
+
+From the outside, the service just looks **"stuck deploying."** The instinct is to suspect the application code. But the actual bug is almost always something mundane like a wrong `/health` path in the health check config — the new code was fine the whole time; ECS just never got a passing health check to confirm it.
+
+---
+
+## 4. Cluster — the capacity boundary
+
+A **cluster** is a logical grouping that tasks and services run inside. That's it — nothing more. It doesn't define behavior, scaling, or deployment logic; it just defines *where capacity comes from*.
+
+A cluster is backed by either:
+
+- **Fargate** — AWS-managed capacity, no servers to think about
+- **EC2** — instances you register as cluster capacity yourself
+
+### Convention: one cluster per environment
+
+Companies typically run **one cluster per environment** (`staging`, `prod`) — not one cluster per service. Services are separated *by name* within that shared cluster, not by spinning up a dedicated cluster for each one.
+
+---
+
+## 5. Putting it together: a real multi-service platform
+
+Applying this to a platform with 11 independent services: it wouldn't need 11 clusters. All 11 services sit inside **one** `agri-yield-prod` cluster, each as its own service — with its own task definition, its own `desiredCount`, and its own independent rolling deployments.
+
+Crucially, these deployments don't interfere with each other. `geospatial-service` redeploying doesn't touch `farm-service`'s running tasks at all — they're just different services that happen to share the same cluster.
+
+```
+                          ECS CLUSTER
+                               │
+              ┌────────────────┼────────────────┐
+              ↓                ↓                ↓
+          SERVICE          SERVICE          SERVICE
+       farm-service     weather-service  geospatial-service
+              │                │                │
+         desired=3        desired=2        desired=2
+              │                │                │
+          ┌───┼───┐         ┌──┴──┐         ┌──┴──┐
+          ↓   ↓   ↓         ↓     ↓         ↓     ↓
+         TASK TASK TASK    TASK  TASK      TASK  TASK
+          🐳   🐳   🐳       🐳     🐳         🐳     🐳
+```
+
+---
+
+## 6. The full pipeline, end to end
+
+Zooming out, here's how everything from a code change to a running container connects:
+
+```
+   Developer
+      ↓
+   Git
+      ↓
+   CI/CD
+      ↓
+   Docker build
+      ↓
+   Docker image
+      ↓
+   ECR                    (image registry — stores the tagged image)
+      ↓
+   ECS Task Definition     (the immutable blueprint, referencing that image tag)
+      ↓
+   ECS Service             (keeps desiredCount running, manages rollout)
+      ↓
+   ECS Task                (one running instance of the task definition)
+      ↓
+   🐳 Running Container
+```
+
+---
+
+## Quick recap
+
+| Concept | What it actually is |
+|---|---|
+| **Task Definition** | Immutable, versioned JSON blueprint — image tag, CPU/mem, env vars, IAM role |
+| **Task** | One running instance of a task definition (usually 1 container, sometimes several via sidecars) |
+| **Service** | Keeps N tasks alive, handles rolling deploys between revisions |
+| **Cluster** | Just a capacity boundary — logical grouping of services, backed by Fargate or EC2 |
