@@ -8,13 +8,20 @@ Both are ways to give an ECS cluster somewhere to actually run tasks. The differ
 
 ## Table of Contents
 
-1. [The actual mechanism](#1-the-actual-mechanism)
-2. [The cost trade-off, with the reasoning](#2-the-cost-trade-off-with-the-reasoning)
-3. [Real clusters mix both](#3-real-clusters-mix-both)
-4. [Reasoning about a real multi-service platform](#4-reasoning-about-a-real-multi-service-platform)
-5. [When containers aren't even the right tool](#5-when-containers-arent-even-the-right-tool)
-6. [Interview line](#6-interview-line)
-7. [Self-check](#7-self-check)
+- [EC2 Launch Type vs Fargate](#ec2-launch-type-vs-fargate)
+  - [Table of Contents](#table-of-contents)
+  - [1. The actual mechanism](#1-the-actual-mechanism)
+    - [EC2 launch type](#ec2-launch-type)
+    - [Fargate](#fargate)
+  - [2. The cost trade-off, with the reasoning](#2-the-cost-trade-off-with-the-reasoning)
+  - [3. Real clusters mix both](#3-real-clusters-mix-both)
+    - [Hard technical limit: no GPUs on Fargate](#hard-technical-limit-no-gpus-on-fargate)
+  - [4. Reasoning about a real multi-service platform](#4-reasoning-about-a-real-multi-service-platform)
+  - [5. When containers aren't even the right tool](#5-when-containers-arent-even-the-right-tool)
+    - [A small, low-traffic, rarely-changed app](#a-small-low-traffic-rarely-changed-app)
+    - [Event-driven, short-lived, bursty-to-zero work](#event-driven-short-lived-bursty-to-zero-work)
+  - [6. Interview line](#6-interview-line)
+  - [Quick recap](#quick-recap)
 
 ---
 
@@ -101,13 +108,6 @@ A function that runs 200ms in response to an S3 upload, or a nightly 2-minute jo
 
 ---
 
-## 7. Self-check
-
-1. Why does EC2 launch type get cheaper as utilization and bin-packing improve, while Fargate's cost doesn't change with utilization at all?
-2. Name a real workload requirement that forces EC2 launch type over Fargate.
-3. Why does a scheduled Fargate task fit an occasional nightly job better than a long-running service with desired count 1?
-
----
 
 ## Quick recap
 
