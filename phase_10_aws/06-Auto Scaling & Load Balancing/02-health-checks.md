@@ -8,12 +8,19 @@ Health checks sound like a single concept, but there are actually two separate s
 
 ## Table of Contents
 
-1. [Two separate self-healing layers, one signal](#1-two-separate-self-healing-layers-one-signal)
-2. [Deregistration delay (connection draining)](#2-deregistration-delay-connection-draining)
-3. [Health check path design is a real trade-off](#3-health-check-path-design-is-a-real-trade-off)
-4. [The example setup from the slide, read correctly](#4-the-example-setup-from-the-slide-read-correctly)
-5. [Interview line](#5-interview-line)
-6. [Self-check](#6-self-check)
+- [Health Checks — Route to the Living](#health-checks--route-to-the-living)
+  - [Table of Contents](#table-of-contents)
+  - [1. Two separate self-healing layers, one signal](#1-two-separate-self-healing-layers-one-signal)
+    - [Load balancer health check — controls routing only](#load-balancer-health-check--controls-routing-only)
+    - [ASG health check — controls replacement](#asg-health-check--controls-replacement)
+    - [The fix](#the-fix)
+  - [2. Deregistration delay (connection draining)](#2-deregistration-delay-connection-draining)
+  - [3. Health check path design is a real trade-off](#3-health-check-path-design-is-a-real-trade-off)
+    - [Shallow check](#shallow-check)
+    - [Deep check](#deep-check)
+  - [4. The example setup from the slide, read correctly](#4-the-example-setup-from-the-slide-read-correctly)
+  - [5. self-healing infrastructure full flow](#5-self-healing-infrastructure-full-flow)
+  - [Quick recap](#quick-recap)
 
 ---
 
@@ -85,18 +92,44 @@ Given this configuration:
 
 ---
 
-## 5. Interview line
-
-> *"A load balancer health check only affects routing — failing it stops traffic, it doesn't fix anything. An Auto Scaling Group only replaces an instance if it's configured to trust that same health check via ELB health checks; otherwise it's watching EC2 status checks alone and won't notice an app that's hung but still running."*
-
 ---
 
-## 6. Self-check
+##  5. self-healing infrastructure full flow
 
-1. An instance's app is deadlocked but the EC2 instance itself is fine. The LB has stopped routing to it. Will the ASG replace it — under what condition?
-2. Why does deregistration delay exist, and what would break without it?
-3. What's the trade-off between a shallow health check and a deep one that verifies a database connection?
-
+                    USERS
+                      │
+                      ▼
+              ┌──────────────┐
+              │     ALB      │
+              └──────┬───────┘
+                     │
+            Health Check /health
+                     │
+        ┌────────────┼────────────┐
+        ↓            ↓            ↓
+     Server A     Server B     Server C
+       🟢           🟢           🔴
+                                  │
+                                  │
+                           ALB removes it
+                                  │
+                                  ▼
+                            No new traffic
+                                  │
+                                  ▼
+                        ASG with ELB checks
+                                  │
+                                  ▼
+                           Replace instance
+                                  │
+                                  ▼
+                           New Server C
+                                  │
+                                  ▼
+                         Health check passes
+                                  │
+                                  ▼
+                         ALB sends traffic
 ---
 
 ## Quick recap
