@@ -11,7 +11,7 @@ then lock a bucket down. Screenshots go in `screenshots/` in this repo
 Prove versioning can undo an overwrite.
 
 1. In S3, Create bucket, give it a globally unique name like
-   `qiyas-yourname-lab`.
+   yourname-lab`.
 2. Open the bucket, Properties, Bucket Versioning, click Edit,
    `_______`, Save.
 3. Make a small `notes.txt` that says "version one", upload it.
@@ -67,7 +67,7 @@ summary showing the transition and expiration.
 Host a real page straight from a bucket — deliberately, the one time this
 whole course makes something public.
 
-1. Create a second bucket: `qiyas-yourname-site`, in your Region.
+1. Create a second bucket: yourname-site`, in your Region.
 2. Permissions tab, Block Public Access, Edit, untick `_______`, confirm.
 3. Properties, Static website hosting, Enable, set index document to
    `_______`.
