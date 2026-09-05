@@ -10,12 +10,12 @@ table.
 ```
 +-------------------------- VPC 10.0.0.0/16 --------------------------+
 |                                                                      |
-|   PUBLIC SUBNET (10.0.1.0/24)        PRIVATE SUBNET (10.0.2.0/24)   |
-|   route: 0.0.0.0/0 -> IGW            route: local only              |
+|   PUBLIC SUBNET (10.0.1.0/24)        PRIVATE SUBNET (10.0.2.0/24)    |
+|   route: 0.0.0.0/0 -> IGW            route: local only               |
 |                                                                      |
-|   [Load Balancer]                    [Database]                    |
-|   reachable from internet            no public IP                  |
-|                                       reachable only from inside    |
+|   [Load Balancer]                    [Database]                      |
+|   reachable from internet            no public IP                    |
+|                                       reachable only from inside     |
 +-----------------------------------------------------------------------+
                   |
               INTERNET
