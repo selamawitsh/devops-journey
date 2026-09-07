@@ -91,14 +91,6 @@ past what a relational join-heavy schema handles comfortably. Treating this
 as an either/or choice for an entire application is usually the wrong
 frame — the real skill is picking the right one **per piece of data**.
 
-## Interview questions
-
-1. What's the actual technical reason SQL is a better fit for "orders and
-   customers" data than DynamoDB is?
-2. Why does DynamoDB not require you to plan capacity the way RDS requires
-   picking an instance size?
-3. Give an example of a single application that would reasonably use both
-   RDS and DynamoDB at once, and say which data goes where.
 
 ## Common mistakes
 
