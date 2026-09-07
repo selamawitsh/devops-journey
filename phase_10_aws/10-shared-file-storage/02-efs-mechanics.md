@@ -138,6 +138,17 @@ Performance mode  -> how individual operations behave (latency/concurrency)
 Throughput mode   -> how much data the filesystem can move per second
 ```
 
+```
+PERFORMANCE
+├── General Purpose → low latency/default
+└── Max I/O         → massive concurrency
+
+THROUGHPUT
+├── Bursting        → storage-based + burst
+├── Provisioned     → choose fixed throughput
+└── Elastic         → automatically adapts
+```
+
 ## Storage classes — the same idea as S3, one layer down
 
 ```
