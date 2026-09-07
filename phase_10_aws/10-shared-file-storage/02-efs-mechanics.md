@@ -147,6 +147,26 @@ THROUGHPUT
 ├── Bursting        → storage-based + burst
 ├── Provisioned     → choose fixed throughput
 └── Elastic         → automatically adapts
+
+
+              EFS
+               │
+       ┌───────┴────────┐
+       │                │
+ PERFORMANCE         THROUGHPUT
+       │                │
+       │                │
+  How operations     How much data
+  behave             per second
+       │                │
+  ┌────┴────┐      ┌────┼────────┐
+  │         │      │    │        │
+General   Max    Burst Provisioned Elastic
+Purpose    I/O
+  │         │      │    │        │
+Low       Massive  Normal  Known   Unknown/
+latency   clients  +spikes requirement changing
+
 ```
 
 ## Storage classes — the same idea as S3, one layer down
