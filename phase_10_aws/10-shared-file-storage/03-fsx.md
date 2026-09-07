@@ -41,11 +41,4 @@ starting point.
 | Want elastic sizing, no capacity planning | Migrating a specific enterprise file system |
 | Web servers, content, shared app data | Special performance or protocol needs |
 
-**Interview line:** *"EFS is the Linux default — reach for FSx only when a
-specific requirement forces it. FSx for Windows when SMB/Active Directory
-compatibility is needed. FSx for Lustre when a workload needs
-HPC-grade throughput, especially when it can link straight to S3 as its
-backing store for a training job's lifetime. NetApp ONTAP and OpenZFS exist
-specifically for lifting an existing enterprise file system into AWS, not
-for new builds."*
 
