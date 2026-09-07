@@ -49,12 +49,3 @@ backing store for a training job's lifetime. NetApp ONTAP and OpenZFS exist
 specifically for lifting an existing enterprise file system into AWS, not
 for new builds."*
 
-## Self-check before moving on
-
-1. Why would a team choose FSx for Windows over EFS even though both are
-   "shared file storage"?
-2. How does linking FSx for Lustre to an S3 bucket save money on a
-   short-lived ML training job compared to keeping a Lustre file system
-   running permanently?
-3. When would NetApp ONTAP or OpenZFS actually be the right choice, and why
-   is that different from a typical new build?
