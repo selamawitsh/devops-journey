@@ -76,15 +76,6 @@ patch, but nothing on the internet can ever initiate a connection back in.
 
 ---
 
-## Interview Questions
-
-1. What's the difference between an Internet Gateway and a NAT Gateway?
-2. Why would a private subnet still need internet access at all?
-3. Why do companies often deploy one NAT Gateway per AZ instead of a single
-   one for the whole VPC?
-4. What exact line in a route table turns a subnet into a public subnet?
-
----
 
 ## Common Mistakes
 
