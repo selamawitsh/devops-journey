@@ -70,15 +70,6 @@ database on EC2 still shows up in specific cases — extremely
 cost-sensitive hobby projects, or workloads needing a database engine RDS
 doesn't offer — but it's the exception, not the default.
 
-## Interview questions
-
-1. What specifically does "managed" mean for a database — what does AWS do
-   that you would otherwise have to do yourself?
-2. Does choosing RDS mean you give up control over the database engine or
-   how you query it?
-3. Why is "failover" specifically called out as the risky 3am job in a
-   self-hosted setup?
-
 ## Common mistakes
 
 - Assuming "managed" means AWS also handles your schema design, query
