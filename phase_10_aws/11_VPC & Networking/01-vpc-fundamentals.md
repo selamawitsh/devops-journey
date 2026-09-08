@@ -1,5 +1,13 @@
 # VPC Fundamentals
 
+## What is a network, before AWS is even involved
+
+Strip AWS away for a second. A network is just a set of devices with a way
+to identify each other, communicate, and control who's allowed to talk to
+whom — your home Wi-Fi, a university's 500 computers, a company's data
+center. AWS gives you the ability to build your own virtual version of
+exactly that inside its cloud. That virtual network is the VPC.
+
 ## What is a VPC?
 
 A **VPC (Virtual Private Cloud)** is your own private, walled-off network inside AWS.
@@ -23,6 +31,24 @@ Think of it as a gated office compound:
                             Internet
 ```
 
+```
+                         AWS
++----------------------------------------------------+
+|                                                      |
+|   Company A              Company B                  |
+|   +-----------+          +-----------+               |
+|   |    VPC    |          |    VPC    |               |
+|   | EC2       |          | EC2       |               |
+|   | Database  |          | Database  |               |
+|   +-----------+          +-----------+               |
+|                                                      |
++----------------------------------------------------+
+```
+
+Company A's resources aren't sitting inside Company B's network just
+because both live in AWS — each VPC is its own separate networking
+environment.
+
 | Compound piece | AWS name | Job |
 |---|---|---|
 | The wall | VPC | Your own isolated space |
@@ -30,10 +56,11 @@ Think of it as a gated office compound:
 | The front gate | Internet Gateway | The one controlled door to the internet |
 | The guard's rulebook | Security groups + route tables | Who may pass, and which direction |
 
-Every AWS account gets a **default VPC** per region so you can launch something on
-day one. In real work you always build your own VPC, because you want control over
-the address range, the subnet layout, and the isolation boundary between
-dev/staging/prod.
+**Important beginner correction:** creating a VPC does **not** automatically
+mean it can reach the internet. A VPC by itself is just an isolated address
+space — subnets, route tables, and an internet gateway are the pieces that
+actually create a path outward, and each is covered in its own file in this
+session.
 
 **Why this matters at a company:** the VPC boundary is also the blast-radius
 boundary. When something goes wrong, "which VPC is this in" is one of the first
@@ -69,6 +96,85 @@ need to read it, not calculate it.**
 
 ---
 
+## Availability Zones — where a subnet actually lives
+
+An AWS **Region** (like `us-east-1`) is a geographic area containing several
+**Availability Zones (AZs)** — physically separate data centers designed so
+a failure in one doesn't take down the others:
+
+```
+                 AWS Region
+        +-------------------------+
+        |                         |
+        | AZ-A      AZ-B      AZ-C|
+        |  |         |         |  |
+        | DC        DC        DC  |
+        |                         |
+        +-------------------------+
+```
+
+**A subnet belongs to exactly one AZ** — you never stretch one subnet
+across two AZs:
+
+```
+Region
+ |
+ +-- AZ-A
+ |    +-- Subnet A   10.0.1.0/24
+ |
+ +-- AZ-B
+ |    +-- Subnet B   10.0.2.0/24
+ |
+ +-- AZ-C
+      +-- Subnet C   10.0.3.0/24
+```
+
+**Why this matters for real availability:** an application running in only
+one AZ goes down completely if that AZ has a serious failure.
+
+```
+Single-AZ (fragile):                 Multi-AZ (resilient):
+
+  Load Balancer                        Load Balancer
+       |                                    |
+     AZ-A                          +--------+--------+
+       |                           v                 v
+     EC2-A                       AZ-A               AZ-B
+                                 EC2-A              EC2-B
+
+  AZ-A fails -> app is           AZ-A fails -> traffic
+  fully down                     shifts to AZ-B, app
+                                  keeps serving
+```
+
+This is the entire reason you'll keep hearing "deploy across multiple AZs"
+— it's not a checkbox, it's what actually keeps an application alive
+through a data-center-level failure.
+
+## CIDR planning across AZs — a realistic layout
+
+Putting the CIDR block and the AZ concept together, a typical two-AZ VPC
+gets carved up like this:
+
+```
+             VPC 10.0.0.0/16
+                    |
+        +-----------+-----------+
+        |                       |
+      AZ-A                    AZ-B
+        |                       |
+   +----+----+             +----+----+
+   |         |             |         |
+Public    Private        Public    Private
+10.0.1   10.0.11        10.0.2    10.0.12
+```
+
+Four subnets, two per AZ (one public, one private), all carved out of the
+same `/16`. This is the shape almost every real two-tier architecture
+starts from.
+
+---
+
 ## Vocabulary Reference
 
 | Term | Plain definition |
@@ -81,6 +187,48 @@ need to read it, not calculate it.**
 
 ---
 
+## Why companies use multiple VPCs — blast radius
+
+```
+                    AWS Account
+                         |
+          +--------------+--------------+
+          |              |              |
+        Dev VPC       Staging VPC     Prod VPC
+          |              |              |
+       testing         testing         real users
+```
+
+If someone makes a bad networking change in Dev, a separate VPC boundary
+means that mistake has no path into Staging or Prod:
+
+```
+Dev mistake  ---X--->  Production   (blocked by the VPC boundary itself,
+                                     not just by discipline)
+```
+
+This is what "controlling blast radius" means in practice — the isolation
+is structural, not just a naming convention.
+
+## CIDR overlap — the problem that bites you later
+
+Two VPCs each built with the same range look fine in isolation:
+
+```
+VPC-A: 10.0.0.0/16          VPC-B: 10.0.0.0/16
+
+     both contain 10.0.1.10 -- but they mean
+     two completely different machines
+```
+
+The moment you need those VPCs to talk to each other (VPC peering, a
+Transit Gateway, a VPN), the overlap becomes a real blocker — peered VPCs
+cannot have overlapping CIDR blocks, and there's no clean fix after the
+fact. This is why CIDR planning happens **before** building out
+infrastructure, not after.
+
+---
+
 ## Real-World Grounding
 
 - Companies use VPCs to give each environment (dev/staging/prod) — or sometimes
@@ -88,9 +236,8 @@ need to read it, not calculate it.**
 - A VPC also underpins compliance requirements (PCI-DSS, HIPAA, etc.) where
   auditors need to see network-level proof that sensitive systems are isolated.
 - VPC peering and Transit Gateway exist because companies eventually need
-  multiple VPCs to talk to each other in a controlled way — that's a topic
-  beyond this session, but it's the natural next question once you're
-  comfortable here.
+  multiple VPCs to talk to each other in a controlled way — and CIDR planning
+  done early is what makes that possible later.
 
 ---
 
@@ -98,8 +245,11 @@ need to read it, not calculate it.**
 
 1. What is a VPC and why does every AWS resource live inside one?
 2. What does the `/16` vs `/24` in a CIDR block actually mean?
-3. Why would a company use multiple VPCs instead of one big one?
-4. What's the difference between the default VPC and a VPC you create yourself?
+3. Why is a subnet tied to exactly one Availability Zone, and why does that
+   matter for availability?
+4. Why would a company use multiple VPCs instead of one big one?
+5. Why does CIDR overlap between two VPCs become a real problem, and when
+   does it actually surface?
 
 ---
 
@@ -110,3 +260,6 @@ need to read it, not calculate it.**
 - Reusing overlapping CIDR ranges across VPCs that will eventually need to be
   peered together (peered VPCs cannot have overlapping CIDR blocks).
 - Doing default-VPC work in a real project just because it's already there.
+- Running a "highly available" application entirely inside one Availability
+  Zone, which defeats the purpose before a single line of infrastructure
+  code is written.
