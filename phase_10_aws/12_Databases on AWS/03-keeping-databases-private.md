@@ -67,16 +67,6 @@ specific IP range, because it automatically covers every instance that ever
 joins that security group — including ones added later by an Auto Scaling
 Group — without editing the rule again.
 
-## Interview questions
-
-1. Why should an RDS instance's "Public access" setting be set to No even
-   if a security group also restricts access?
-2. What's the difference between allowing a security-group source versus
-   an IP-range source for a database's inbound rule, and why does it
-   matter for a fleet that scales up and down?
-3. Which of the three layers (private subnet, security group, public
-   access setting) would still protect the database if one of the other
-   two were misconfigured?
 
 ## Common mistakes
 
