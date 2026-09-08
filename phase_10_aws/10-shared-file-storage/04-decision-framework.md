@@ -1,5 +1,28 @@
 # Session 10 (4/5): EBS vs EFS vs S3 vs FSx — The Master Decision
 
+## The one question that actually matters
+
+Not "how much storage do I need" — instead:
+
+```
+        How does my application
+           access the data?
+                  |
+     +------------+------------+
+     v            v            v
+ One server   Many servers   API/object
+     |            |            |
+     v            v            v
+    EBS          EFS           S3
+     |
+     | unless there's a special
+     | requirement (Windows/SMB,
+     | HPC, migrating an existing
+     | enterprise filesystem)
+     v
+    FSx
+```
+
 ## Five scenarios, one rule each
 
 | Scenario | Answer | Why |
@@ -12,26 +35,132 @@
 
 ## The real stories behind each
 
-- **EBS — a payments database.** Runs on one server and needs the fastest
-  possible disk that only it touches. Attaches to a single instance with
-  low latency — perfect for a boot volume or a database's data disk.
-- **EFS — a photo-sharing site on an auto-scaling fleet.** A photo uploaded
-  to any server must appear on all of them. EFS is one Linux file system
-  many servers mount at once — new servers see the same files instantly,
-  no copying required.
-- **FSx — a Windows design team's shared drive, or an ML team's massive
-  dataset.** FSx for Windows gives native SMB shares; FSx for Lustre gives
-  HPC-grade throughput. EFS can do neither.
+### EBS — a payments database
 
-## The underlying pattern
+```
+EC2-DB
+  |
+  v
+ EBS
+  |
+  +-- users
+  +-- payments
+  +-- transactions
 
-Ask, in order: **how many servers need it, and does it need to survive the
-instance?**
+  ONE server, needs a low-latency
+  disk nothing else touches
+```
 
-- One server, needs speed → EBS
-- Many servers, need the same files → EFS
-- Anywhere, via API, unlimited scale → S3
-- A specific protocol or performance requirement EFS can't meet → FSx
+Runs on one server and needs the fastest possible disk that only it
+touches. This is exactly why you don't reach for EFS here — the database
+doesn't need 50 servers sharing its data files, it needs one server with a
+fast dedicated disk.
+
+### EFS — a photo-sharing site on an auto-scaling fleet
+
+```
+                 Load Balancer
+                      |
+        +-------------+-------------+
+        v             v             v
+      EC2-A         EC2-B         EC2-C
+        |             |             |
+        +-------------+-------------+
+                      |
+                      v
+                     EFS
+                      |
+                 /uploads/cat.jpg
+```
+
+A photo uploaded to any server must appear on all of them. Without EFS:
+
+```
+EC2-A saves to EBS-A -> cat.jpg
+EC2-B looks in EBS-B -> not there
+```
+
+With EFS, one Linux file system every server mounts at once — new servers
+added by the Auto Scaling Group see the same files instantly, no copying
+required.
+
+### S3 — the photo storage that doesn't need mounting at all
+
+```
+Application
+     |
+     | PUT / GET / DELETE (API, not a mount)
+     v
+    S3
+```
+
+Ten million photos doesn't mean ten thousand EC2 disks — it means an object
+store designed for exactly this scale, reached through an API instead of a
+filesystem path.
+
+### FSx — a Windows team's shared drive, or an ML team's massive dataset
+
+```
+Windows PCs                          Huge ML dataset
+     |                                     |
+    SMB                                    v
+     |                                     S3
+     v                                     |
+FSx for Windows                            v
+                                   FSx for Lustre
+                                            |
+                                            v
+                                     ML training job
+```
+
+FSx for Windows gives native SMB shares with Active Directory permissions.
+FSx for Lustre gives HPC-grade throughput, often backed directly by S3.
+EFS structurally cannot do either — wrong protocol for Windows, wrong
+performance tier for HPC.
+
+## The critical correction: "how many servers" isn't the whole rule
+
+```
+Many servers
+     |
+     v
+Do they need a real filesystem (open/read/write/seek)?
+     |
+   YES  ------------------------->  EFS / FSx
+     |
+    NO
+     |
+     v
+Do they just need objects through an API (PUT/GET)?
+     |
+   YES  ------------------------->  S3
+```
+
+Number of servers plus **access pattern** together decide this — not
+server count alone. Many servers wanting simple object access still means
+S3, not EFS.
+
+## The full picture in one diagram
+
+```
+                    STORAGE DECISION
+                           |
+             +-------------+-------------+
+             v             v             v
+          BLOCK          FILE          OBJECT
+             |             |             |
+             v             v             v
+            EBS        EFS / FSx         S3
+             |             |             |
+       One server     Shared files      API,
+       low latency    many servers      huge scale
+             |             |
+       +-----+-----+  +----+----------------+
+       v           v  v                     v
+   Database    OS disk  Linux/simple    Specialized
+                        shared FS       (Windows/SMB,
+                                        HPC, migration)
+```
 
 ## Where this shows up in real work
 
@@ -40,9 +169,44 @@ uploads and themes shared across every web server via one file system. A
 large share of **lift-and-shift migrations** (moving an existing on-prem
 app to AWS unchanged) lean on EFS or FSx specifically because the legacy
 application code expects a real mounted file system and was never written
-to call an object storage API — the app can't simply be pointed at S3
-without a rewrite, but pointing it at a mounted EFS folder often needs no
-code changes at all.
+to call an object storage API:
+
+```
+Legacy app (written in 2015):
+  open("/uploads/photo.jpg")   <- expects a real filesystem path
+
+              |
+              v
+
+  Point it at EFS: /uploads -> EFS     <- works, no code changes
+  Point it at S3 directly              <- requires rewriting the app
+                                           to call PUT/GET instead
+```
+
+The app can't simply be pointed at S3 without a rewrite, but pointing it
+at a mounted EFS folder often needs no code changes at all.
+
+## The full e-commerce example, end to end
+
+```
+Internet
+   |
+Load Balancer
+   |
+EC2-A  EC2-B  EC2-C  --- shared uploads --->  EFS
+   |
+EC2-DB  --- own low-latency disk --->  EBS (PostgreSQL data)
+
+New photo uploads  --- API calls --->  S3
+
+Windows employees  --- SMB --->  FSx for Windows
+
+ML team:  S3 (dataset)  --->  FSx for Lustre (training)  --->  results back to S3
+```
+
+Five services, five different jobs, one architecture — this is what
+thinking like an architect rather than memorizing service names looks
+like.
 
 **Interview line:** *"The decision isn't about which service can technically
 hold files — it's how many servers need concurrent access and whether the
