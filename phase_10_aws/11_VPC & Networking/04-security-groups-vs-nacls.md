@@ -60,15 +60,6 @@ where one misconfigured security group doesn't equal a full breach.
 
 ---
 
-## Interview Questions
-
-1. What does "stateful" mean in the context of a security group, and why
-   does it matter practically?
-2. Why can't a security group block a specific IP address?
-3. When would you reach for a NACL instead of just tightening a security
-   group?
-4. What's the classic NACL mistake involving ephemeral ports?
-
 ---
 
 ## Common Mistakes
