@@ -23,7 +23,7 @@ first — the point is to build it, not copy it.
 <summary>Check your answers</summary>
 
 - Step 2: VPC only
-- Step 3: qiyas-vpc
+- Step 3: selam-vpc
 - Step 4: 10.0.0.0/16
 
 </details>
@@ -44,9 +44,9 @@ first — the point is to build it, not copy it.
 <details>
 <summary>Check your answers</summary>
 
-- Step 2: qiyas-vpc
-- Step 3: qiyas-public, 10.0.1.0/24
-- Step 4: qiyas-private, 10.0.2.0/24
+- Step 2: selam-vpc
+- Step 3: selam-public, 10.0.1.0/24
+- Step 4: selam-private, 10.0.2.0/24
 - Step 5: Both are still effectively private — naming does nothing until the
   route table is wired.
 - Step 6: Enable auto-assign public IPv4
@@ -64,17 +64,17 @@ first — the point is to build it, not copy it.
 4. Edit routes → Add route: Destination `______`, Target: your internet
    gateway.
 5. On **Subnet associations**, associate `______` with this route table.
-6. What's different about qiyas-private now compared to qiyas-public?
+6. What's different about selam-private now compared to selam-public?
    ______
 
 <details>
 <summary>Check your answers</summary>
 
-- Step 1: Internet gateways, qiyas-igw
+- Step 1: Internet gateways, selam-igw
 - Step 2: Attach to VPC
 - Step 4: 0.0.0.0/0
-- Step 5: qiyas-public
-- Step 6: qiyas-private has no route to the IGW, so it cannot reach or be
+- Step 5: selam-public
+- Step 6: selam-private has no route to the IGW, so it cannot reach or be
   reached by the internet — that route table difference is the entire
   public/private distinction.
 
@@ -89,7 +89,7 @@ first — the point is to build it, not copy it.
 2. Security group: allow **______** port **______** from anywhere. Add User
    Data that installs a web server.
 3. Open the instance's public IP in a browser. What should happen? ______
-4. If you launched an instance into qiyas-private instead, what would you
+4. If you launched an instance into selam-private instead, what would you
    expect? ______
 5. Clean-up order: terminate the instance, then ______, then delete
    subnets, then ______.
@@ -97,7 +97,7 @@ first — the point is to build it, not copy it.
 <details>
 <summary>Check your answers</summary>
 
-- Step 1: qiyas-vpc, qiyas-public
+- Step 1: selam-vpc, selam-public
 - Step 2: HTTP, port 80
 - Step 3: The web page loads — the instance is reachable from the internet.
 - Step 4: No public IP would be assigned, and it would be unreachable from
@@ -135,7 +135,7 @@ Fill in the cause for each symptom, in the order you'd actually check them:
 
 ## Take-Home Assignment: Add a Second Availability Zone
 
-1. Reuse `qiyas-vpc` and add a **second public subnet** in a **different AZ**
+1. Reuse `selam-vpc` and add a **second public subnet** in a **different AZ**
    (e.g. `10.0.3.0/24`).
 2. Associate the new subnet with the existing public route table so it also
    reaches the internet gateway.
