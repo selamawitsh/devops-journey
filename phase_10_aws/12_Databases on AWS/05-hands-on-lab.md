@@ -28,7 +28,7 @@ first — the point is to build it, not copy it.
 <summary>Check your answers</summary>
 
 - Step 2: MySQL
-- Step 3: qiyas-db
+- Step 3: selam-db
 - Step 4: db.t3.micro, No
 - Step 5: No — a database on the internet is how breaches happen
 
@@ -43,7 +43,7 @@ first — the point is to build it, not copy it.
 2. SSH to an EC2 instance in the same VPC.
 3. Install a client: `sudo yum install -y ______`.
 4. Connect: `mysql -h ______ -u MASTERUSER -p`.
-5. Run: `CREATE DATABASE qiyas; USE qiyas; CREATE TABLE students (id INT,
+5. Run: `CREATE DATABASE selam; USE selam; CREATE TABLE students (id INT,
    name VARCHAR(50));`
 6. Insert a row and read it back. What command reads all rows from
    `students`? `______`
@@ -79,7 +79,7 @@ is port 3306 not being open from the server's security group — same
 <details>
 <summary>Check your answers</summary>
 
-- Step 2: qiyas-carts, userId
+- Step 2: selam-carts, userId
 - Step 3: on-demand
 - Step 5: DynamoDB has no fixed schema — every item only needs to share
   the partition key, not every field.
@@ -94,9 +94,9 @@ is port 3306 not being open from the server's security group — same
 1. In one sentence each, contrast RDS and DynamoDB from what you just
    built: RDS is `______`. DynamoDB is `______`.
 2. Which one keeps costing money while sitting idle overnight? `______`
-3. Delete the RDS instance: select `qiyas-db`, Actions, Delete. Should you
+3. Delete the RDS instance: select `selam-db`, Actions, Delete. Should you
    keep the final snapshot for this lab? `______`
-4. Delete the DynamoDB table: select `qiyas-carts`, Delete table.
+4. Delete the DynamoDB table: select `selam-carts`, Delete table.
 5. Confirm clean: RDS shows no databases, DynamoDB shows no tables, and any
    EC2 instance you launched for this lab is terminated.
 
@@ -122,8 +122,8 @@ week — go back and delete it now if you haven't yet.**
 ```
 $ sudo yum install -y mariadb105
 $ mysql -h ENDPOINT -u admin -p
-mysql> CREATE DATABASE qiyas;
-mysql> USE qiyas;
+mysql> CREATE DATABASE selam;
+mysql> USE selam;
 mysql> CREATE TABLE students (id INT, name VARCHAR(50));
 mysql> INSERT INTO students VALUES (1,'Sara');
 mysql> SELECT * FROM students;
