@@ -84,15 +84,6 @@ instance left running after a lab session bills every single hour, all
 week, whether or not you ever touch it again — unlike Lambda (Session 08)
 or DynamoDB on-demand, there's no "idle equals free" here.
 
-## Interview questions
-
-1. What does "point-in-time restore" mean, and what makes it possible
-   beyond just daily snapshots?
-2. Walk through what actually happens, step by step, when the primary AZ
-   in a Multi-AZ RDS deployment fails.
-3. Why does Multi-AZ roughly double RDS cost, specifically?
-4. Why is forgetting to delete an RDS instance after a lab meaningfully
-   worse than forgetting to delete a DynamoDB table?
 
 ## Common mistakes
 
