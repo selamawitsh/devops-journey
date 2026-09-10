@@ -11,6 +11,8 @@ By the end of this session you should be able to explain, without notes:
 5. When rebase is safe, and when it genuinely isn't
 6. What interactive rebase (`squash`, `reword`, `drop`) is for
 
+(The hands-on practice for all of this lives in `lab.md`. This file is the concepts only.)
+
 ## 1. The Core Problem: Two Versions of the Same Thing
 
 Before any Git syntax, here's the whole problem in plain terms.
@@ -64,58 +66,6 @@ A --- B --- C --- E     <- main moved on (typo fix)
 
 This is called a **three-way merge** because Git looks at three points to figure out the combination: your branch's tip, `main`'s tip, and their shared ancestor (`B`).
 
-### Merge Lab
-
-This uses a throwaway practice repo — not your `devops-journey` history.
-
-```bash
-cd ~/Desktop
-mkdir git-merge-rebase-lab
-cd git-merge-rebase-lab
-git init
-git branch -M main
-echo "Project starts here." > app.txt
-git add app.txt
-git commit -m "chore: initialize project"
-```
-
-Create the feature branch and commit on it:
-
-```bash
-git switch -c feature/login
-echo "Login feature" >> app.txt
-git add app.txt
-git commit -m "feat: add login feature"
-```
-
-Now move `main` forward independently, so the branches actually diverge:
-
-```bash
-git switch main
-echo "Main branch update" >> app.txt
-git add app.txt
-git commit -m "docs: update main project"
-git log --oneline --graph --all
-```
-
-You should see two separate lines of history, like:
-
-```
-* 1111111 docs: update main project
-| * 2222222 feat: add login feature
-|/
-* 3333333 chore: initialize project
-```
-
-Now merge:
-
-```bash
-git merge feature/login
-git log --oneline --graph --all
-```
-
-You'll get a merge commit combining both lines — this is the three-way merge from the diagram above, produced for real in your own repo.
-
 ## 3. Rebase: Pretend You Started Later
 
 Rebase solves the same divergence problem with a completely different strategy. Going back to the document analogy: instead of creating one new combined document, rebase says **"pretend I started my edits after the typo fix was already made."**
@@ -135,46 +85,6 @@ A --- B --- C --- D'
 ```
 
 Notice it's `D'`, not `D`. This is the critical detail: **rebase does not move your original commit — it creates a brand-new one** with the same changes but a different parent, which means a different hash. The old `D` still technically exists for a short while but nothing points to it anymore, so it becomes unreachable. This is exactly why we say **rebase rewrites history** — the commit you thought you had is gone, replaced by a lookalike with a new identity.
-
-### Rebase Lab
-
-Use a separate clean repo so this doesn't interfere with the merge lab above.
-
-```bash
-cd ~/Desktop
-mkdir git-rebase-lab
-cd git-rebase-lab
-git init
-git branch -M main
-echo "Project starts here." > app.txt
-git add app.txt
-git commit -m "chore: initialize project"
-```
-
-```bash
-git switch -c feature/api
-echo "API feature" >> app.txt
-git add app.txt
-git commit -m "feat: add API feature"
-```
-
-```bash
-git switch main
-echo "Main update" >> app.txt
-git add app.txt
-git commit -m "docs: update project"
-git log --oneline --graph --all
-```
-
-You should see the same shape as before — two diverged lines. Now, from the feature branch:
-
-```bash
-git switch feature/api
-git rebase main
-git log --oneline --graph --all
-```
-
-Instead of a merge commit, you'll get one straight line — your feature commit now sits directly on top of the latest `main`, with a new hash.
 
 ### Merge vs Rebase, Side by Side
 
@@ -202,13 +112,7 @@ Think of it as: rebase is a private editing tool for cleaning up your own work-i
 
 ## 5. Interactive Rebase
 
-Beyond replaying commits onto a new base, rebase can also let you edit your own recent commit history directly:
-
-```bash
-git rebase -i HEAD~3
-```
-
-This opens an editor listing your last 3 commits, each prefixed with `pick`. You can change that word per commit:
+Beyond replaying commits onto a new base, rebase can also let you edit your own recent commit history directly, using `git rebase -i HEAD~N`, where `N` is how many recent commits you want to review. This opens an editable list of those commits, each one changeable:
 
 | Instruction | Effect |
 |---|---|
@@ -228,7 +132,7 @@ commit 3: fix another typo
 commit 4: fix deploy script
 ```
 
-That's a completely normal way work actually happens, but it's noisy history to leave behind. Before opening a Pull Request, you could run `git rebase -i HEAD~4` and mark commits 2-4 as `squash`, ending up with:
+That's a completely normal way work actually happens, but it's noisy history to leave behind. Marking commits 2-4 as `squash` before opening a Pull Request would collapse all four into:
 
 ```
 commit: add deployment script

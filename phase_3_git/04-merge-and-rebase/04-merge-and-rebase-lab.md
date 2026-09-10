@@ -1,14 +1,14 @@
 # Session 4: Hands-On Lab - Merge vs Rebase
 
-Two separate labs, using throwaway practice repos outside `devops-journey` so nothing here touches your real project history. Do Lab A completely before starting Lab B — they use different folders on purpose.
+Two separate labs, using throwaway practice repos outside `devops-journey` so nothing here touches your real project history. Do Lab A completely before starting Lab B — they use different folders on purpose, so you can compare the two outcomes side by side afterward.
 
 ---
 
 ## Lab A: Merge
 
-Goal: cause a real three-way merge, on purpose, and watch the graph before and after.
+The point of this lab isn't the commands themselves — it's watching divergence happen on purpose, then watching Git resolve it by combining both sides into a new commit.
 
-### Step 1: Create the practice repo
+Start by creating a disposable repo, so you're free to experiment without any risk to real work:
 
 ```bash
 cd ~/Desktop
@@ -18,7 +18,7 @@ git init
 git branch -M main
 ```
 
-### Step 2: First commit on main
+Give it one starting commit — this is the shared ancestor both branches will later be compared against:
 
 ```bash
 echo "Project starts here." > app.txt
@@ -26,12 +26,7 @@ git add app.txt
 git commit -m "chore: initialize project"
 ```
 
-State so far:
-```
-A  <- main
-```
-
-### Step 3: Branch off and commit on the branch
+Now branch off and make a change there. This represents "your work" — isolated, not yet part of `main`:
 
 ```bash
 git switch -c feature/login
@@ -40,65 +35,40 @@ git add app.txt
 git commit -m "feat: add login feature"
 ```
 
-State so far:
-```
-A --- D
-      ^
-   feature/login (main is still at A)
-```
-
-### Step 4: Move main independently — this is what causes divergence
+Here's the important part: go back to `main` and change it too, independently. This is what actually causes divergence — without this step, merging later would just be a trivial fast-forward, and you wouldn't see a real merge commit at all:
 
 ```bash
 git switch main
 echo "Main branch update" >> app.txt
 git add app.txt
 git commit -m "docs: update main project"
-git log --oneline --graph --all
 ```
 
-Expected graph — two separate lines, this is divergence made real:
-```
-* 1111111 docs: update main project
-| * 2222222 feat: add login feature
-|/
-* 3333333 chore: initialize project
-```
+Run `git log --oneline --graph --all` here before merging anything. You should see the history visibly split into two separate lines. Sit with that for a second — that split *is* divergence, made real instead of theoretical. Both branches share the same starting commit, but neither one contains the other's change.
 
-### Step 5: Merge
+Now merge:
 
 ```bash
 git merge feature/login
-git log --oneline --graph --all
 ```
 
-Expected — a merge commit joining both lines:
-```
-*   4444444 Merge branch 'feature/login'
-|\
-| * 2222222 feat: add login feature
-* | 1111111 docs: update main project
-|/
-* 3333333 chore: initialize project
-```
+Because both sides had actually changed, Git can't just fast-forward — it creates a new merge commit whose entire purpose is holding both changes at once. Run `git log --oneline --graph --all` again and notice the graph now shows the two lines rejoining at that new commit.
 
-Check the file itself:
+Confirm it for real, not just in the graph:
 
 ```bash
 cat app.txt
 ```
 
-Expected: all three lines present — both edits survived, combined into one file. That's the merge commit's entire job, made visible.
+Both the "Login feature" line and the "Main branch update" line should be present in the file. That's the concrete proof that the merge commit did its job — nothing was lost from either side.
 
 ---
 
 ## Lab B: Rebase
 
-Goal: cause the same kind of divergence, but resolve it with rebase instead, and see the difference in the resulting graph.
+Same starting problem as Lab A — divergence — but this time you'll resolve it by rewriting your branch's commits instead of combining them.
 
-### Step 1: Create a separate, clean practice repo
-
-Do not reuse Lab A's folder — it's already merged.
+Use a fresh folder, not Lab A's — that repo has already been merged, and mixing the two would muddy what you're trying to observe:
 
 ```bash
 cd ~/Desktop
@@ -106,17 +76,12 @@ mkdir git-rebase-lab
 cd git-rebase-lab
 git init
 git branch -M main
-```
-
-### Step 2: First commit
-
-```bash
 echo "Project starts here." > app.txt
 git add app.txt
 git commit -m "chore: initialize project"
 ```
 
-### Step 3: Branch and commit
+Branch and commit, same as before:
 
 ```bash
 git switch -c feature/api
@@ -125,42 +90,25 @@ git add app.txt
 git commit -m "feat: add API feature"
 ```
 
-### Step 4: Move main independently
+Move `main` forward independently, same as before — this recreates the exact same kind of divergence you caused in Lab A:
 
 ```bash
 git switch main
 echo "Main update" >> app.txt
 git add app.txt
 git commit -m "docs: update project"
-git log --oneline --graph --all
 ```
 
-Expected — same shape as Lab A at this point, two diverged lines:
-```
-* main commit
-| * feature commit
-|/
-* initial commit
-```
-
-### Step 5: Rebase the feature branch onto main
+This time, instead of merging, go back to your feature branch and rebase it onto `main`:
 
 ```bash
 git switch feature/api
 git rebase main
-git log --oneline --graph --all
 ```
 
-Expected — a single straight line, no merge commit:
-```
-* 5555555 feat: add API feature
-* 3333333 docs: update project
-* 89abcde chore: initialize project
-```
+Run `git log --oneline --graph --all`. You should see a single straight line this time — no merge commit, no visible branching at all. That's not because nothing happened; it's because Git replayed your feature commit on top of the new `main`, giving it a new hash in the process. If you compare the hash shown now to what it was before the rebase, it will be different. That's the "rewrites history" idea from the README, made observable instead of abstract.
 
-Note that the feature commit's hash is different from what it was before the rebase — that's the "new commit" Section 3 of the README described, not the original one moved.
-
-### Step 6: Compare the two labs side by side
+Once both labs are done, look at them side by side:
 
 ```bash
 cd ~/Desktop/git-merge-rebase-lab
@@ -169,17 +117,17 @@ cd ~/Desktop/git-rebase-lab
 git log --oneline --graph --all
 ```
 
-Same starting problem in both — one shows the branch structure (merge), the other shows a clean line with rewritten commits (rebase).
+Same starting problem, two different resolutions: one preserved the branch structure with a merge commit, the other erased it in favor of a clean line built from brand-new commits.
 
 ---
 
 ## Challenge
 
-Before moving to Session 5, do this without instructions, still inside `git-rebase-lab`:
+Still inside `git-rebase-lab`, work through this without step-by-step instructions:
 
-1. Make two more small commits on `feature/api` — anything, even one-line changes to `app.txt`.
-2. Run `git rebase -i HEAD~2` and squash the second commit into the first.
-3. Run `git log --oneline` and confirm you now have one combined commit instead of two.
-4. Write, in your own words, what would have gone wrong if `feature/api` had already been pushed and someone else had pulled it before you ran this rebase.
+1. Make two more small commits on `feature/api` — anything, even trivial one-line edits.
+2. Use `git rebase -i HEAD~2` to squash the second commit into the first, so they become one.
+3. Confirm with `git log --oneline` that you now have one combined commit instead of two.
+4. In your own words, explain what would have gone wrong here if `feature/api` had already been pushed and a teammate had pulled it before you ran this rebase.
 
-Question 4 has no command to run — it's checking whether the shared-history rule from the README actually landed, not just the mechanics.
+Question 4 doesn't have a command to run. It's there to check whether the shared-history rule from the README actually landed as understanding, not just as something you can operate around mechanically.
