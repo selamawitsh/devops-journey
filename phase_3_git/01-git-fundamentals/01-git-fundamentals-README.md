@@ -152,8 +152,6 @@ If you only ever use `git pull`, you are fine for now. `git fetch` becomes more 
 
 ## Active Recall
 
-Answer these from memory — no looking back at the sections above.
-
 1. What is the difference between Git and GitHub?
 2. Fill in the blank: `??? -> git add -> ??? -> git commit -> ???`
 3. What does `git add` actually do, and what does it *not* do?
