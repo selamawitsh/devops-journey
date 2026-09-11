@@ -10,7 +10,6 @@ git switch -c feature/my-feature    # create + switch to a new branch
 git switch main                     # switch back to main
 git branch -d feature/my-feature    # delete a local branch (after merge)
 ```
-
 ## Syncing with remote
 
 ```bash
