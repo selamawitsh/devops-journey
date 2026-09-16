@@ -1,40 +1,196 @@
 # Session 13 — Logs
 
-## What a log actually is
-
-A log is detailed text your application or service writes as it runs. Where a metric is a single number, a log is a sentence (or a stack trace, or a request line) with context attached.
+## Where the previous file left you
 
 ```
-10:42:01 GET /orders 200 OK
-10:42:03 GET /cart 200 OK
-10:42:05 POST /pay 500 ERROR: database timeout
+      5xx errors
+       35 |                         *
+        5 |         *     *
+        0 |   *
+          +----------------------------
+                                  ^
+                                  |
+                 you know something broke here
+                 you do NOT know what
 ```
 
-CloudWatch Logs organizes these into **log groups** (usually one per application or Lambda function) and **log streams** within a group (usually one per instance or invocation source).
+A number cannot carry an explanation. Text can. That text is a log.
 
-## The pairing that matters
+---
 
-> Metrics tell you THAT something is wrong. Logs tell you WHY.
+## What a log looks like
 
-A metric shows `5xx errors: 2 → 4 → 35`. That's an alert, not an explanation. Opening the log group for that service and searching for `ERROR` around the same timestamp gives you `database timeout` — now you actually know what to fix.
+```
++----------------------------------------------------+
+|                      app-logs                      |
++----------------------------------------------------+
+| 10:42:01   GET  /orders   200   OK                 |
+| 10:42:03   GET  /cart     200   OK                 |
+| 10:42:05   POST /pay      500   ERROR: db timeout  |   <--
+| 10:42:06   POST /pay      500   ERROR: db timeout  |   <--
++----------------------------------------------------+
+```
 
-Neither one replaces the other. A system with only metrics tells you something is on fire but not which room. A system with only logs (no aggregated numbers) means you'd have to notice the fire by reading transcripts line by line.
+Compare the two side by side:
 
-## Logs cost money — this is not a footnote
+```
+        METRIC                        LOG
+  +----------------+       +---------------------------+
+  |  errors:  35   |       | 10:42:05 POST /pay 500     |
+  |                |       | ERROR: database timeout    |
+  +----------------+       +---------------------------+
+   one number, no          one event, full context:
+   context                 when, what endpoint, what
+                           failed, why
+```
+
+The metric is the smoke alarm. The log is the fire report.
+
+---
+
+## How CloudWatch organises them
+
+Logs are not one giant pile. They are nested:
+
+```
+CloudWatch Logs
+    |
+    +-- LOG GROUP:  /aws/lambda/process-payment
+    |        |
+    |        +-- log stream: 2026/09/18/[$LATEST]abc123
+    |        +-- log stream: 2026/09/18/[$LATEST]def456
+    |
+    +-- LOG GROUP:  /var/log/httpd/access
+             |
+             +-- log stream: i-0a1b2c3d (server 1)
+             +-- log stream: i-0e4f5g6h (server 2)
+```
+
+```
+  LOG GROUP   =  one application or service
+  LOG STREAM  =  one source inside it (one instance, one invocation)
+```
+
+When you go hunting during an incident, you pick the group (which app) and then search across its streams.
+
+---
+
+## The pairing that is the whole point
+
+```
+         SOMETHING IS WRONG
+                 |
+      +----------+----------+
+      |                     |
+   METRICS                LOGS
+      |                     |
+      v                     v
+  "THAT it                "WHY it
+   happened"               happened"
+      |                     |
+  errors: 35          ERROR: database timeout
+      |                     |
+      +----------+----------+
+                 |
+                 v
+        now you can actually fix it
+```
+
+Neither half is optional:
+
+```
+  metrics only  ->  "the building is on fire, somewhere"
+  logs only     ->  you must read every transcript to notice the fire
+  both          ->  "fire, second floor, electrical"
+```
+
+---
+
+## Logs cost money — and this is where people get burned
 
 CloudWatch Logs bills for two separate things:
 
-- **Ingestion** — every byte written into a log group.
-- **Storage/retention** — how long those bytes sit there.
+```
+  your app writes a line
+          |
+          v
+   +--------------+
+   |  INGESTION   |   <-- you pay per GB written in
+   +--------------+
+          |
+          v
+   +--------------+
+   |   STORAGE    |   <-- you pay per GB, per month, for as
+   +--------------+       long as it stays
+```
 
-By default, log groups retain data **forever** unless you set a retention period. A company that never sets retention will eventually be paying storage costs for years-old debug logs nobody will ever read again. Session's example retention period is **30 days** — long enough to investigate most incidents, short enough that old noise expires automatically.
+Default retention is **never expire**:
 
-**When you create a log group, setting a retention period is not optional cleanup — it's a cost control decision you make on day one.**
+```
+RETENTION NOT SET
+month 1   [####]
+month 6   [########################]
+month 12  [################################################]
+month 24  [################################################################]
+                                                  still paying for all of it
 
-## How engineers actually search logs
 
-In the console: CloudWatch → Logs → Log groups → open the group → use the filter box for a keyword (`ERROR`, a request ID, a user ID). At any real scale, teams use **CloudWatch Logs Insights** (a query language over log data) instead of manually scrolling — worth knowing the name exists even though this session's lab uses the basic filter box.
+RETENTION = 30 DAYS
+today     [####]
++30 days  [####]  older lines drop off automatically
++90 days  [####]  cost stays flat
+```
+
+Setting retention is a decision you make on day one, not cleanup you do later. Thirty days is the example from the session — long enough to investigate almost any incident, short enough that debug noise from last spring is not on your bill.
+
+---
+
+## How an engineer actually searches logs
+
+Console path:
+
+```
+CloudWatch
+    |
+    v
+  Logs
+    |
+    v
+Log groups  --->  pick the group  --->  filter box: "ERROR"
+```
+
+What you are really doing is narrowing on two axes at once:
+
+```
+                 TIME ------------------------>
+              10:40   10:41   10:42   10:43
+  service A     .       .       .       .
+  service B     .       .      ERR      .    <-- metric said B, so look here
+  service C     .       .       .       .
+                                ^
+                                |
+                     alarm fired at 10:42
+```
+
+The metric gave you the row. The alarm timestamp gave you the column. The log gives you the sentence in that cell.
+
+At real scale, teams use **CloudWatch Logs Insights** — a query language over the same data — instead of scrolling. Worth knowing the name exists; this session's lab uses the basic filter box.
+
+---
 
 ## When logs are the wrong tool
 
-Don't use logs to answer a question a metric already answers cheaply. "What's my average CPU over the last hour?" is a metric question — pulling that out of raw log lines (if it were even logged) is slower and more expensive than just looking at the `CPUUtilization` graph. Logs are for **narrative** (what happened, in what order, with what error message) — not for **aggregate numbers over time**.
+```
+QUESTION: "what is my average CPU over the last hour?"
+
+  via logs:     parse thousands of lines, extract numbers,
+                average them yourself, slowly, expensively
+  via metrics:  open the graph, it is already there
+```
+
+```
+  LOGS     ->  narrative.  what happened, in order, with what error
+  METRICS  ->  aggregate.  how much, how often, trending which way
+```
+
+Using logs to answer a metric question is slow and costs ingestion money for data you did not need. Using metrics to answer a log question is impossible.
