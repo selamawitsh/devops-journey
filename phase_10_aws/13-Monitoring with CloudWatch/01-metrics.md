@@ -1,49 +1,201 @@
 # Session 13 — Metrics
 
+## The problem before the solution
+
+You have built something on AWS. It is running right now:
+
+```
+        YOUR APPLICATION
+              |
+   +----------+----------+
+   |          |          |
+  EC2        RDS      Lambda
+ server    database  functions
+```
+
+Today everything is fine. Tomorrow, one of these goes wrong:
+
+```
+  EC2                RDS              Lambda
+  CPU 95%      storage 99% full     errors rising
+   |                  |                  |
+   +------------------+------------------+
+                      |
+              users see errors
+                      |
+              and you are asleep
+```
+
+You cannot sit at a screen 24 hours a day watching for this. Something else has to watch. That something is CloudWatch, and the raw material it watches is **metrics**.
+
+---
+
 ## What a metric actually is
 
-A metric is one number, tracked over time. That's the entire definition — nothing more mystical than that.
-
-AWS is already producing these numbers for every resource you run, whether you asked for them or not:
-
-| Service | Example metrics |
-|---|---|
-| EC2 | `CPUUtilization`, `NetworkIn`, `NetworkOut`, disk read/write ops |
-| RDS | `CPUUtilization`, `FreeStorageSpace`, `DatabaseConnections` |
-| Lambda | `Invocations`, `Errors`, `Duration`, `Throttles` |
-
-None of this required you to write instrumentation code. It ships by default the moment the resource exists.
-
-## Standard vs detailed monitoring
-
-- **Standard monitoring** — one data point every 5 minutes. Free, on by default.
-- **Detailed monitoring** — one data point every 1 minute. Costs extra per metric.
-
-The tradeoff is reaction time vs cost. A batch job that runs overnight doesn't need 1-minute resolution. A payment API during a flash sale might.
-
-## Why companies actually rely on this
-
-Nobody wants a human staring at a CPU graph all day. In practice, metrics are the input to two things engineers actually care about:
-
-1. **Autoscaling decisions** — an Auto Scaling Group's target-tracking policy is just "watch `CPUUtilization`, add instances when it's high." No alarm, no email, no person involved.
-2. **Alarms** (covered next file) — the same numbers become the trigger for "wake someone up."
-
-So a metric by itself doesn't do anything. It becomes useful the moment something else (a scaling policy, an alarm, a dashboard) reads it.
-
-## What metrics can't tell you
-
-A metric tells you **THAT** something changed. It cannot tell you **WHY**.
+One number, tracked over time. That is the entire definition.
 
 ```
-5xx errors: 2 → 4 → 35
+CPUUtilization
+
+ 100 |
+  80 |                              *
+  60 |                        *
+  40 |            *     *
+  20 |   *   *
+   0 +---+---+----+-----+-----+-----+----
+     10:00  10:05 10:10 10:15 10:20 10:25
 ```
 
-That graph says "something broke." It says nothing about what. For that you need logs (next file) — the pairing of metric + log is the actual skill here, not either one alone.
+Same data as a list:
 
-## How engineers use this when debugging
+```
+10:00  ->  CPU 30%
+10:05  ->  CPU 35%
+10:10  ->  CPU 42%
+10:15  ->  CPU 78%
+10:20  ->  CPU 91%      <-- something changed here
+```
 
-When an incident starts, the first move is almost never "grep the logs." It's "open the dashboard, see which number moved." Metrics narrow down *where* to look before you spend time reading *why*. Jumping straight to logs on a system with dozens of services wastes time; the metric tells you which service's logs are worth opening.
+The number by itself is boring. The number **over time** is where the meaning lives — 91% means nothing until you can see it used to be 30%.
 
-## When NOT to reach for a custom metric
+---
 
-Before writing a custom `PutMetricData` call for something, check whether AWS is already tracking it for the resource type you're using. Reinventing `CPUUtilization` with a custom metric is wasted engineering effort — the built-in ones covered in Exercise 1 of the lab are free and already there.
+## Metrics you get for free, per service
+
+AWS measures your resources automatically. You write no code, install no agent, configure nothing.
+
+```
++------------------+------------------+------------------+
+|       EC2        |       RDS        |     LAMBDA       |
++------------------+------------------+------------------+
+| CPUUtilization   | CPUUtilization   | Invocations      |
+| NetworkIn        | FreeStorageSpace | Errors           |
+| NetworkOut       | DatabaseConn.    | Duration         |
+| DiskReadOps      | ReadIOPS         | Throttles        |
++------------------+------------------+------------------+
+| "is this server  | "is the disk     | "are my          |
+|  overloaded?"    |  about to fill?" |  functions       |
+|                  |                  |  failing?"       |
++------------------+------------------+------------------+
+```
+
+Each column answers a different operational question. Notice each one is a question a human would actually ask at 3am.
+
+---
+
+## How often the number is recorded
+
+This is a cost decision, not a technical one.
+
+```
+STANDARD MONITORING (free, default)
+  |     |     |     |     |     |
+  x-----x-----x-----x-----x-----x
+  0     5     10    15    20    25   minutes
+  one data point every 5 minutes
+
+
+DETAILED MONITORING (costs extra)
+  | | | | | | | | | | | | | | | | |
+  x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x
+  0 1 2 3 4 5 6 7 8 9 ...          minutes
+  one data point every 1 minute
+```
+
+What that difference means in practice:
+
+```
+Problem starts at 10:00:30
+
+Standard:  you might not see it until 10:05  (4.5 min blind)
+Detailed:  you see it at 10:01               (30 sec blind)
+```
+
+A nightly batch job does not need 1-minute resolution. A payment API during a sale might. Match the resolution to how fast you actually have to react — and pay accordingly.
+
+---
+
+## What a metric cannot do
+
+This is the limitation that shapes the whole rest of the session.
+
+```
+      5xx errors
+       35 |                         *
+       20 |                    *
+        5 |         *     *
+        0 |   *
+          +----------------------------
+```
+
+Read that graph out loud. You can say:
+
+```
+  "errors went up sharply around 10:42"      <-- YES, the metric tells you this
+  "because the database connection timed out" <-- NO, the metric cannot tell you this
+```
+
+```
+   METRIC  --->  tells you  THAT something happened
+   METRIC  -/->  tells you  WHY it happened
+```
+
+The WHY lives in logs, which is the next file.
+
+---
+
+## Why companies actually care about metrics
+
+A metric does nothing on its own. It becomes useful the moment something reads it:
+
+```
+                    METRIC
+                (CPUUtilization)
+                       |
+        +--------------+--------------+
+        |              |              |
+        v              v              v
+    ALARM         AUTOSCALING     DASHBOARD
+        |         POLICY              |
+        v              |              v
+  "wake someone"       v         "glance and see
+                 "add a server"    it is fine"
+```
+
+Three different consumers, one source of numbers. That middle branch is worth noticing: an Auto Scaling Group's target-tracking policy is just "watch CPUUtilization, add instances when it is high." No alarm, no email, no human involved at all. Monitoring is not only about telling people — sometimes it is about the system fixing itself.
+
+---
+
+## How engineers actually use this during an incident
+
+The instinct of a beginner is to open the logs first. The instinct of an experienced engineer is to open the dashboard first.
+
+```
+ALERT COMES IN
+      |
+      v
++---------------------------+
+| Step 1: which NUMBER moved?  |   <-- metrics narrow WHERE
++---------------------------+
+      |
+      v
++---------------------------+
+| Step 2: read THAT service's  |   <-- logs explain WHY
+|         logs, that time window|
++---------------------------+
+```
+
+On a system with twenty services, jumping straight to logs means you do not know whose logs to open. The metric tells you which door to walk through before you spend twenty minutes reading the wrong room's transcript.
+
+---
+
+## When NOT to create a metric
+
+Before writing custom code to publish a metric, check whether AWS is already tracking it.
+
+```
+  You think:  "I will write code to report CPU usage"
+  Reality:    CPUUtilization already exists, free, since day one
+```
+
+Reinventing a built-in metric is wasted effort and adds a cost that was already zero. Custom metrics are for things only your application knows — "items in checkout queue", "failed logins per minute" — never for infrastructure numbers AWS already publishes.
