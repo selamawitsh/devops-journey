@@ -1,110 +1,108 @@
 # Notes — Text Processing
 
-## find
-find . -name "*.log"        recursive search by filename pattern (unlike ls,
-                              which only looks in the current directory)
-find . -type f                 regular files only
-find . -type d                   directories only (includes the starting
-                                   directory itself)
-find . -mtime -1                   modified within the last 1 day (negative
-                                     = less than)
-find . -mtime +7                     modified more than 7 days ago (positive
-                                       = more than) - sign flips the direction,
-                                       easy to get backwards
-find . -size +0c                       size greater than 0 bytes - note this
-                                         means "has content," NOT "exists";
-                                         an empty file created by touch fails
-                                         this test even though it's a real file
-find . -name "*.log" -exec CMD {} \;      runs CMD once per matched file, {}
-                                            is replaced with the filename,
-                                            \; marks the end of the command
+## Why this session matters
 
-Real pattern: find . -name "*.log" -mtime +7 -exec rm {} \; is the core of
-most real log-rotation/cleanup scripts.
+A server produces logs like this, constantly:
 
-## grep
-grep "PATTERN" file       lines containing PATTERN
-grep -i                     case-insensitive
-grep -c                       count of matching lines only, not the lines
-grep -n                          show line numbers with each match
-grep -v                             invert: show lines that do NOT match
-grep -A N / -B N                       show N lines of context after/before
-                                         each match - isolated error lines
-                                         rarely tell the full story, context
-                                         does
+    2026-09-22 09:00:01 INFO Application started
+    2026-09-22 09:03:22 ERROR Database connection failed
+    2026-09-22 09:05:43 WARN High memory usage
 
-## sed
-sed 's/OLD/NEW/' file         prints the transformed result to stdout ONLY -
-                                the file itself is untouched by default
-sed -i 's/OLD/NEW/' file          actually modifies the file in place
+Nobody reads thousands of lines by hand. The real skill in this session
+isn't memorizing 8 separate commands — it's learning to CHAIN small tools
+together, each doing one simple job:
 
-This default (no file changes without -i) is a safety feature: preview any
-transformation on a real/production file before committing to -i. Running
--i blind without previewing is a common real way to corrupt a config file.
+    raw log file
+        |
+    find/grep   -> narrow down to the lines or files that matter
+        |
+    cut/awk/sed   -> pull out or transform just the piece you need
+        |
+    sort            -> group identical things together
+        |
+    uniq              -> collapse or count the groups
+        |
+    an actual answer
 
-s/OLD/NEW/     replaces only the FIRST match per line
-s/OLD/NEW/g      the g flag replaces ALL matches per line (same first-vs-all
-                  logic as ${var/old/new} vs ${var//old/new} from Session 11)
+## find — locating files
 
-## awk
-awk 'PATTERN { ACTION }' file
+    find .                    everything under the current directory, recursively
+    find . -type f              regular files only
+    find . -type d                directories only (includes "." itself)
+    find . -name "*.log"             filename pattern match
 
-awk automatically splits each line into fields by whitespace:
-  $1, $2, $3...   individual fields, numbered from 1
-  $0                the entire original line, untouched
+Why "*.log" is quoted: without quotes, BASH itself would try to expand
+*.log against files in your CURRENT directory before find ever runs —
+possibly the wrong files, or an error if none match here. Quoting hands
+the literal pattern *.log to find, which then applies it at every level
+of the directory tree, not just the current one.
 
-$1/$2/etc here means something completely different from $1/$2 in a
-script's arguments (Session 8) - same symbol, different meaning depending
-on context, consistent with a pattern seen throughout this phase.
+    find . -iname "*.log"       same as -name, but case-insensitive
+                                  matches app.log, APP.LOG, App.Log alike
 
-awk '{print $1}' file          print field 1 of every line
-awk '/PATTERN/ {print $1}'       print field 1, but ONLY for lines matching
-                                   PATTERN - this is grep's filtering and
-                                   cut's column-picking combined in one tool
+    find . -mtime -1               modified within the last 1 day
+    find . -mtime +7                 modified MORE than 7 days ago
+                                       (sign flips the direction: - = less
+                                       than, + = more than — easy to get
+                                       backwards)
+    find . -size +0c                   size greater than 0 bytes — this
+                                         means "has content," not "exists";
+                                         a file created by touch (empty)
+                                         fails this test
 
-awk is a mechanical column-splitter - it has no awareness of meaning, only
-position. A field number lines up differently depending on how many words
-came before it on that specific line, so $4 can be a completely different
-kind of value across lines with different sentence structures. Works best
-on data with a consistent, predictable format.
+    find . -name "*.log" -exec CMD {} \;
+                                          runs CMD once PER matched file.
+                                          {} is replaced with the filename,
+                                          \; marks where the command ends.
 
-## cut
-cut -d ":" -f 1 file        -d sets the delimiter (what character separates
-                              fields; default awk uses whitespace, cut needs
-                              it specified explicitly)
-                            -f picks which field number(s), e.g. -f 1,3 for
-                              multiple fields
+Visual — what -exec actually does with 3 matches:
 
-Real reason cut exists alongside awk: for a simple one-delimiter,
-one-or-few-field job, cut is faster to write and read. awk is reached for
-once you need pattern matching or more complex field logic.
+    find finds: a.log, b.log, c.log
+                  |        |       |
+               exec CMD  exec CMD  exec CMD     <- 3 separate command runs
+               on a.log  on b.log  on c.log
 
-## sort and uniq
-uniq only removes CONSECUTIVE duplicate lines - not duplicates anywhere in
-the file. Running uniq on unsorted input where matching lines aren't
-adjacent does nothing useful; every line still prints, since none of the
-duplicates happen to be next to each other.
+Real pattern: find . -name "*.log" -mtime +7 -exec rm {} \; is the core
+of most real log-rotation and cleanup scripts.
 
-sort file | uniq          sort first, so identical lines become adjacent,
-                             THEN uniq can actually collapse them
-sort file | uniq -c          same, but also prints a count of how many times
-                                each unique line appeared
+## grep — searching file CONTENTS (not filenames)
 
-sort | uniq -c is genuinely one of the most common one-liners in all of
-Linux - used constantly to count occurrences of anything: log levels,
-HTTP status codes, IP addresses hitting a server.
+    grep "ERROR" app.log        lines containing ERROR
+    grep -i "error" app.log       case-insensitive (matches ERROR, error,
+                                    Error, eRrOr, all the same)
+    grep -c "ERROR" app.log         COUNT of matching lines only, not the
+                                      lines themselves
+    grep -n "ERROR" app.log           show LINE NUMBERS with each match —
+                                        useful for jumping straight to the
+                                        spot in a big log instead of
+                                        scrolling manually
+    grep -v "ERROR" app.log             INVERT: show lines that do NOT
+                                          match
+    grep -A 1 "ERROR" app.log             match plus 1 line of context
+                                            AFTER it (-B for before) — an
+                                            isolated error line rarely
+                                            tells the full story, context
+                                            does
+    grep -r "ERROR" .                       RECURSIVE: search every file
+                                              under a directory tree, not
+                                              just one file
+    grep "ERROR" *.log                        search multiple files at once
+                                                by wildcard
 
-## xargs vs find -exec
-find . -name "*.log" | xargs echo "Processing:"
-                                   batches ALL matched filenames into ONE
-                                   command call - echo runs once total, with
-                                   every filename appended as arguments
+Visual — grep is a FILTER, narrowing a stream of lines down to only the
+ones that match:
 
-find . -name "*.log" -exec echo "Found:" {} \;
-                                   runs echo SEPARATELY, once per matched
-                                   file - one process spawned per match
-
-For something cheap (echo) the difference is invisible. For something
-expensive per file (compressing, uploading, calling an API), whether the
-whole batch runs as one process or spawns one process per file is a real,
-meaningful performance difference in production automation.
+    all lines in the file
+    ------------------------
+    INFO  ...
+    ERROR ...      <-- kept
+    INFO  ...
+    ERROR ...      <-- kept
+    WARN  ...
+    ------------------------
+           |
+       grep "ERROR"
+           |
+           v
+    ERROR ...
+    ERROR ...
