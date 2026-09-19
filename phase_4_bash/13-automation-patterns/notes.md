@@ -1,94 +1,91 @@
 # Notes — Automation Patterns
 
+## The big picture
+
+    Bash automation script
+              |
+    +---------+---------+---------+
+    |         |         |         |
+ Config   Decision/   Logging   dry-run?
+           Logic
+    |         |         |         |
+    +---------+---------+---------+
+              |
+        Actual action
+
+Four separate concerns, working together in every real production script.
+
 ## Idempotency
-A script is idempotent if running it once, or running it 5 times, produces
-the same end state with no errors — safe to re-run at any time.
 
-Non-idempotent example:
-  mkdir /tmp/app_config        <- fails on every run after the first,
-                                   since the directory already exists
+Definition: a script is idempotent if running it once, or running it 10
+times, produces the SAME final state, with no errors from "it's already
+done."
 
-Idempotent fix — check first, act only if needed:
-  if [[ -d /tmp/app_config ]]; then
-      echo "already exists, skipping"
-  else
-      mkdir /tmp/app_config
-  fi
+Non-idempotent:
 
-Shortcut specific to mkdir: mkdir -p is already idempotent on its own —
-silently does nothing if the directory exists, no error, no need for a
-manual if check.
+    Run 1: mkdir /tmp/app_config    -> created, succeeds
+    Run 2: mkdir /tmp/app_config      -> FAILS, "File exists"
+    Run 3: mkdir /tmp/app_config        -> FAILS, "File exists"
 
-Real-world relevance: a provisioning or deployment script that runs
-automatically (via cron, CI/CD, or a config management tool checking in
-repeatedly) MUST be idempotent, or it works once and then breaks on
-every subsequent run even though nothing is actually wrong.
+Idempotent (check first, act only if needed):
 
-## Dry-run mode
-Lets a script describe what it WOULD do without actually doing it —
-critical before running anything destructive or hard to reverse.
+    if [[ -d /tmp/app_config ]]; then
+        echo "already exists, skipping"
+    else
+        mkdir /tmp/app_config
+    fi
 
-  run_or_show() {
-      if [[ "$DRY_RUN" == true ]]; then
-          echo "[DRY RUN] Would run: $*"
-      else
-          echo "Running: $*"
-          "$@"
-      fi
-  }
+    Run 1: doesn't exist yet -> creates it
+    Run 2: already exists      -> skips, no error
+    Run 3: already exists        -> skips, no error
 
-Key design point: both branches wrap the SAME command ("$@", quoted, from
-Session 8) rather than maintaining two separate descriptions of what
-"should" happen — this is what keeps the dry-run output trustworthy and
-in sync with what the real run actually does.
+    Final state every time: /tmp/app_config exists. No failures, ever.
 
-${1:-} (Session 11's default-value expansion) is used to safely check
-whether --dry-run was passed as an argument, without triggering an
-"unbound variable" error under set -u when no argument was given at all.
+Same idea applies beyond directories — e.g. creating a user:
 
-Real-world relevance: before running a script that deletes old backups
-or overwrites production config, an engineer runs --dry-run first, reads
-exactly what it claims it would do, and only removes the flag once
-confident it's correct. This is one of the biggest habits separating
-careful production scripts from ones that cause middle-of-the-night
-incidents.
+    Run 1: useradd deploy    -> user created
+    Run 2: useradd deploy      -> FAILS, "user already exists"
 
-## Proper logging
-  log_info()  { echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $*"; }
-  log_warn()  { echo "[WARN] $(date '+%Y-%m-%d %H:%M:%S') - $*" >&2; }
-  log_error() { echo "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') - $*" >&2; }
+    Idempotent version, conceptually:
+        if user "deploy" exists
+            do nothing
+        else
+            create the user
 
-INFO goes to stdout. WARN and ERROR go to stderr (>&2, from Session 9).
-This lets anything downstream — a person, a cron job, a monitoring
-system — separate normal progress from things that need attention using
-nothing but standard redirection:
-  ./script.sh 2>/dev/null    shows only normal output, discards
-                               warnings/errors entirely
-A cron job can alert only when a script's stderr is non-empty,
-completely independent of how much routine INFO chatter it produces.
+mkdir -p is a convenient built-in shortcut that's ALREADY idempotent on
+its own for directories specifically — silently does nothing if the
+directory exists, no if-check needed. But idempotency isn't "always use
+-p" — that's just one command that happens to support the pattern
+natively. The actual concept is broader than any one flag.
 
-## Configuration separated from logic
-Hardcoded (bad for reuse/reconfiguration):
-  BACKUP_DIR="/home/selamawit/backups"
-  RETENTION_DAYS=7
-  (values baked directly into the script)
+## The mindset shift this requires
 
-Config file + source (good):
-  config.sh:
-    BACKUP_DIR="/home/selamawit/backups"
-    RETENTION_DAYS=7
+    BAD mindset:  "what COMMANDS should I run?"
 
-  script.sh:
-    source config.sh          (or: . config.sh)
-    echo "$BACKUP_DIR"
+        run mkdir
+        run chmod
+        run cp
+        run systemctl restart
 
-source loads a file's variable assignments directly into the current
-shell's environment, as if you'd typed them yourself. Editing config.sh
-alone changes the script's behavior on its next run — no edit to the
-actual script logic required.
+    BETTER mindset:  "what STATE do I want the system to end up in?"
 
-Real-world relevance: this is the same underlying idea behind .env
-files, Kubernetes ConfigMaps, and Ansible variable files — separating
-WHAT a script does (logic) from WHICH values it uses (configuration), so
-non-developers or different environments (dev/staging/production) can
-reconfigure behavior safely, without touching code.
+        [ ] directory exists
+        [ ] correct permissions
+        [ ] correct application files
+        [ ] service running
+
+The difference: a command-list mindset assumes a clean starting point
+every time. A desired-state mindset checks "is this already true?" before
+acting, and only takes action when it isn't — which is exactly why it
+survives being run repeatedly, on a system in any starting condition.
+
+This exact mindset — describe the desired end state, let the tool figure
+out what needs to change to get there — is the foundation of Docker,
+Ansible, Terraform, and Kubernetes. Idempotency in a 5-line Bash script is
+the same idea you'll meet again at much larger scale later in this
+roadmap.
+
+Real-world relevance: a script that runs automatically (cron, CI/CD, a
+config management tool checking in repeatedly) MUST be idempotent, or it
+works exactly once and then breaks on every later run even though
+nothing is actually wrong.
