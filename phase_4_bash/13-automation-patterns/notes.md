@@ -279,3 +279,87 @@ And every individual action in a script built this way is:
     Configuration
       config.sh              plain variable assignments, no logic
       source config.sh         loads those variables into the current shell
+
+## Configuration separated from logic
+
+Without separation — everything mixed into one file:
+
+    deploy.sh
+      |
+      +-- configuration   (APP_NAME, APP_DIR, RETENTION_DAYS...)
+      +-- logic             (the actual commands and decisions)
+      +-- logging             (log_info/log_warn/log_error)
+
+Changing any setting means opening and editing the actual script logic —
+risky, and requires understanding Bash to do safely.
+
+With separation:
+
+    config.sh                       deploy.sh
+      |                                |
+      +-- settings only                +-- logic
+                                        +-- actions
+                                        +-- logging
+                                        +-- source config.sh   <- loads
+                                            the settings in
+
+    source config.sh     (or the shorthand:  . config.sh)
+
+"source" reads a file's variable assignments directly into the CURRENT
+shell's environment, exactly as if you had typed those lines yourself —
+not a subprocess, no isolation, the variables become immediately usable
+in the rest of the calling script.
+
+Editing config.sh alone changes the script's behavior on its very next
+run. The script's actual logic is never touched — someone who doesn't
+know Bash at all can safely change a retention policy or a target
+directory just by editing plain variable assignments in a separate file.
+
+Real-world relevance: this is the exact same underlying idea behind .env
+files, Kubernetes ConfigMaps, and Ansible variable files — separate WHAT
+a script does (logic, stays constant) from WHICH values it uses
+(configuration, changes per environment: dev/staging/production).
+
+## All four patterns, combined
+
+                 A real automation script
+                          |
+         +----------------+----------------+
+         |                |                |
+      config           dry-run          logging
+         |                |                |
+         +----------------+----------------+
+                          |
+                  idempotent actions
+
+Typical real usage:
+
+    source config.sh              load settings first
+    ./deploy.sh --dry-run            preview every action, nothing runs
+    ./deploy.sh                        actually execute, for real
+
+And every individual action in a script built this way is:
+  - safe to repeat (idempotent)
+  - previewable before running for real (dry-run)
+  - clearly logged, normal output separated from problems (logging)
+  - configurable without touching code (config separation)
+
+## Cheat sheet — Session 13
+
+    Idempotency
+      check state before acting:  if [[ -d "$DIR" ]]; then ... fi
+      mkdir -p                       built-in idempotent shortcut
+
+    Dry-run
+      DRY_RUN=true/false               toggle via a flag like --dry-run
+      one function, one command path     both modes read from it
+
+    Logging
+      log_info()   -> stdout
+      log_warn()     -> stderr (>&2)
+      log_error()      -> stderr (>&2)
+      2>/dev/null         discards stderr only, keeps stdout
+
+    Configuration
+      config.sh              plain variable assignments, no logic
+      source config.sh         loads those variables into the current shell
