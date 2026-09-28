@@ -78,7 +78,7 @@ Every question needs a short answer: one word, one line, or one sentence. If you
 
 ---
 
-## Answer key
+## Answer
 
 <details>
 <summary>Try all 40 first, then open</summary>
