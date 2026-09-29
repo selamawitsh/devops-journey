@@ -8,7 +8,7 @@ Related files: `RECALL.md` (revision questions) and `EXERCISE.md` (hands-on task
 
 ## 1. Big picture: why a health checker needs functions
 
-Your manager says: "Check all our servers." That is actually several jobs:
+Your manager says: "Check all our servers." That is actually several separate jobs hiding inside one sentence:
 
 ```text
 Check servers
@@ -20,7 +20,7 @@ Check servers
      `-- Create report
 ```
 
-Each job becomes a function:
+Each job becomes its own function:
 
 ```text
 main()
@@ -32,7 +32,7 @@ main()
  `-- generateReport()
 ```
 
-A function is a small worker with one job:
+A function is a small worker with exactly one job:
 
 ```text
 +--------------------------+
@@ -42,13 +42,13 @@ A function is a small worker with one job:
 +--------------------------+
 ```
 
-`main()` tells that worker: "do your job."
+`main()` doesn't do the work itself — it tells each worker: "do your job," and collects the results.
 
 ---
 
 ## 2. What is a function?
 
-A named block of code that performs a particular task.
+A named block of code that performs a particular task, written once and reused anywhere it's needed.
 
 ```go
 func sayHello() {
@@ -112,13 +112,13 @@ body
 
 ## 4. Calling a function
 
-Defining a function does not execute it.
+Defining a function does not execute it. Go reads the definition and remembers it exists, but nothing runs until the function is actually called.
 
 ```go
 func sayHello() {
     fmt.Println("Hello")
 }
-// nothing happens yet
+// nothing happens yet, even though Go has compiled this
 ```
 
 You must call it:
@@ -162,7 +162,7 @@ program starts
 
 ## 5. Why functions matter in DevOps
 
-Imagine 100 servers, and every server needs a connectivity check, a port check, and a CPU check. Without functions, that is one giant tangled block of code.
+Imagine 100 servers, and every server needs a connectivity check, a port check, and a CPU check. Without functions, that is one giant tangled block of code, where every check is copy-pasted and every bug fix has to be repeated in a dozen places.
 
 ```text
 main()
@@ -174,7 +174,7 @@ main()
  `-- checkCPU()
 ```
 
-Each piece now has one clear responsibility. This matters even more once programs grow larger, which is exactly what will happen through the rest of this roadmap.
+Each piece now has one clear responsibility, is easy to test on its own, and only needs to be fixed in one place. This matters even more as programs grow, which is exactly what happens through the rest of this roadmap.
 
 ---
 
@@ -193,7 +193,7 @@ checkServer("api-server")
 // Checking: api-server
 ```
 
-`serverName` is a **parameter**. `"api-server"` is the **argument**, the value passed in.
+`serverName` is a **parameter** — a named placeholder in the function's definition. `"api-server"` is the **argument** — the actual value supplied when the function is called.
 
 ```text
 checkServer("api-server")
@@ -205,11 +205,21 @@ checkServer("api-server")
 +--------------------+
 ```
 
+A function can take more than one parameter, separated by commas:
+
+```go
+func checkServer(serverName string, port int) {
+    fmt.Println("Checking", serverName, "on port", port)
+}
+
+checkServer("api-server", 443)
+```
+
 ---
 
 ## 7. Functions can return values
 
-Ask: "is this server reachable?" A function can answer with `true` or `false`.
+Ask: "is this server reachable?" A function can answer with `true` or `false` instead of just printing something.
 
 ```go
 func isServerReachable() bool {
@@ -217,12 +227,14 @@ func isServerReachable() bool {
 }
 ```
 
-`bool` after the parentheses means "this function returns a boolean." `return true` gives the result back.
+`bool` after the parentheses means "this function returns a boolean." `return true` sends that value back to whoever called the function.
 
 ```go
 reachable := isServerReachable()
 // reachable -> true
 ```
+
+A function with no return type (like `sayHello` above) doesn't give anything back — it just does something, like printing. A function with a return type must always return a value of that exact type on every code path.
 
 ---
 
@@ -254,13 +266,13 @@ isServerReachable()
 reachable = true
 ```
 
-This already looks like the shape of a real automation program.
+This already looks like the shape of a real automation program: give it information, get a result back.
 
 ---
 
 ## 9. Parameter vs argument vs call
 
-A distinction worth locking in early:
+A distinction worth locking in early, because the vocabulary matters once you start reading other people's Go code and documentation:
 
 ```text
 func checkServer(name string) bool   <- "name" is a PARAMETER (a placeholder in the definition)
@@ -269,11 +281,51 @@ checkServer("api-server")            <- "api-server" is an ARGUMENT (the real va
                                          and this whole line is a CALL (it actually runs the function)
 ```
 
-Defining `func checkServer(name string) bool` teaches Go what the function looks like. It does nothing by itself. Only `checkServer("api-server")` executes it.
+Defining `func checkServer(name string) bool` teaches Go what the function looks like and what it needs. It does nothing by itself — no server is checked, nothing prints. Only `checkServer("api-server")`, the call, actually executes it.
 
 ---
 
-## 10. The DevOps mental model
+## 10. A preview: functions can return more than one value
+
+You'll use this constantly starting in Lesson 8, so it's worth seeing the shape now. Go lets a function return **two values at once**, separated by a comma:
+
+```go
+func checkServer(name string) (bool, string) {
+    if name == "" {
+        return false, "server name cannot be empty"
+    }
+    return true, "ok"
+}
+
+reachable, message := checkServer("api-server")
+```
+
+```text
+func checkServer(name string) (bool, string)
+                                |      |
+                           first      second
+                           return     return
+                           value      value
+```
+
+Notice both the function's return type (`(bool, string)`) and the variables receiving the result (`reachable, message :=`) list two things, in the same order. This is how Go later lets a function return both a result **and** an error at the same time — the shape is identical, just with `error` as the second type instead of `string`. You don't need to use this for every function in this lesson's exercise, but recognize the shape when you see it.
+
+---
+
+## 11. Function naming conventions
+
+```text
+camelCase          checkServer, isServerReachable     NOT check_server, CheckServer (unless exported later)
+verb first          checkCPU, generateReport           NOT cpuChecker, reportGenerator
+descriptive         isServerReachable                  NOT check2, doThing
+boolean-returning    isX, hasX, canX                    isHealthy, hasAccess, canConnect
+```
+
+A function name should describe the action it performs. Naming it after a verb (`checkServer`, not `serverCheck`) matches how functions read in a call: "check the server," not "the server check." Functions that return a `bool` conventionally start with `is`, `has`, or `can`, which makes an `if` statement read naturally: `if isServerReachable(name) { ... }` reads almost like English.
+
+---
+
+## 12. The DevOps mental model
 
 ```text
                   main()
@@ -290,4 +342,16 @@ Defining `func checkServer(name string) bool` teaches Go what the function looks
                  report
 ```
 
-Instead of one huge program, you build small workers with clear responsibilities, each one testable and reusable on its own.
+Instead of one huge program, you build small workers with clear responsibilities, each one testable and reusable on its own. This is the shape every DevOps tool in this roadmap will keep following, just with more layers added on top: functions become methods on structs (Lesson 7), results become `(value, error)` pairs (Lesson 8), and related functions get grouped into packages (Module 02).
+
+---
+
+## 13. How engineers debug functions
+
+| Symptom | Usual cause | First check |
+|---|---|---|
+| "I called the function but nothing happened" | the function was only defined, never actually called | search the file for the function name followed by `(` with real arguments, not just `func name(...)` |
+| `not enough arguments in call to checkServer` | forgot to pass a required parameter | compare the function's signature to how it's being called |
+| `checkServer(name string) bool` used, but the result looks wrong | confused a parameter (placeholder in the definition) with an argument (the real value passed in) | re-read the definition versus the call site side by side |
+| Function returns the wrong type, or compiler complains about the return | the `return` statement doesn't match the declared return type, or a code path is missing a `return` entirely | check every branch of the function has a `return` matching the declared type |
+| Two functions seem to do almost the same thing | a function was copy-pasted and modified slightly instead of adding a parameter to the original | consider whether a single function with an extra parameter replaces both |
