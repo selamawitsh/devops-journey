@@ -4,13 +4,6 @@ Source material: `README.md`.
 
 Every question needs a short answer: one word, one line, or one sentence. If you cannot answer in one line, that concept has not sunk in yet, so revisit that section of the notes.
 
-## How to use this file
-
-1. Cover the notes. Answer out loud or on paper. Do not peek.
-2. Check the answer key at the bottom. Mark each miss.
-3. Redo only the missed questions.
-4. Repeat on day 1, day 3 and day 7.
-
 ---
 
 ## A. Why packages
@@ -139,19 +132,3 @@ Every question needs a short answer: one word, one line, or one sentence. If you
 </details>
 
 ---
-
-## Self-score
-
-| Section | Questions | Day 1 | Day 3 | Day 7 |
-|---|---|---|---|---|
-| A. Why packages | 1-3 | /3 | /3 | /3 |
-| B. What a package is | 4-7 | /4 | /4 | /4 |
-| C. One folder, one package | 8-10 | /3 | /3 | /3 |
-| D. Module path and imports | 11-14 | /4 | /4 | /4 |
-| E. Exported vs unexported | 15-21 | /7 | /7 | /7 |
-| F. go mod tidy | 22-25 | /4 | /4 | /4 |
-| G. Naming conventions | 26-29 | /4 | /4 | /4 |
-| H. Debugging | 30-34 | /5 | /5 | /5 |
-| Total | 34 | /34 | /34 | /34 |
-
-Target: 30 or more out of 34 on day 7. Any section below 80 percent, go back to that part of `README.md`.
