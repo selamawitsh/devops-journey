@@ -4,7 +4,6 @@ Source material: `README.md`.
 
 Every question needs a short answer: one word, one line, or one sentence. If you cannot answer in one line, that concept has not sunk in yet, so revisit that section of the notes.
 
-
 ## A. Why Go handles errors differently
 
 1. In the delivery analogy, what does the "package thrown over the fence" represent?
@@ -70,7 +69,7 @@ Every question needs a short answer: one word, one line, or one sentence. If you
 ## Answer key
 
 <details>
-<summary>Try all 32 first, then open</summary>
+<summary>Try all first, then open</summary>
 
 ### A. Why Go handles errors differently
 
