@@ -191,23 +191,3 @@ Every question needs a short answer: one word, one line, or one sentence. If you
 </details>
 
 ---
-
-## Self-score
-
-| Section | Questions | Day 1 | Day 3 | Day 7 |
-|---|---|---|---|---|
-| A. Why functions | 1-3 | /3 | /3 | /3 |
-| B. What a function is | 4-7 | /4 | /4 | /4 |
-| C. Function anatomy | 8-11 | /4 | /4 | /4 |
-| D. Calling a function | 12-14 | /3 | /3 | /3 |
-| E. Parameters | 15-19 | /5 | /5 | /5 |
-| F. Return values | 20-24 | /5 | /5 | /5 |
-| G. Parameter + return together | 25-27 | /3 | /3 | /3 |
-| H. Parameter vs argument vs call | 28-31 | /4 | /4 | /4 |
-| I. Applying it | 32-35 | /4 | /4 | /4 |
-| J. Multiple return values | 36-39 | /4 | /4 | /4 |
-| K. Naming conventions | 40-43 | /4 | /4 | /4 |
-| L. Debugging | 44-48 | /5 | /5 | /5 |
-| Total | 48 | /48 | /48 | /48 |
-
-Target: 42 or more out of 48 on day 7. Any section below 80 percent, go back to that part of `README.md`.
