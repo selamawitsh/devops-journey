@@ -440,20 +440,6 @@ This learning environment uses the `docker-compose` command with a hyphen, match
 9. `docker-compose down` normally preserves named volumes.
 10. `docker-compose down -v` removes declared named volumes and can delete their data.
 
-## Self-check Questions
-
-Try answering these questions after studying the lesson:
-
-1. What is a Docker network?
-2. Why do containers need to communicate with one another?
-3. What hostname can an application use to reach a Compose service named `postgres` on the same network?
-4. What is the difference between `ports` and `expose`?
-5. What is a Docker volume?
-6. Why should a database use persistent storage?
-7. What is the difference between a named volume and a bind mount?
-8. What is the effect of `docker-compose down`?
-9. What extra effect does `docker-compose down -v` have?
-10. Why is hard-coding a container IP address usually a bad idea?
 
 ## Lesson Summary
 
